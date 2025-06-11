@@ -84,7 +84,7 @@ const ChallengeFilters = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full p-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="w-full p-2 rounded-lg border text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder="Search by title or topic..."
           />
         </div>
@@ -97,7 +97,7 @@ const ChallengeFilters = () => {
           <select
             value={difficulty}
             onChange={(e) => setDifficulty(e.target.value)}
-            className="w-full p-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="w-full p-2 text-gray-900 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
             <option value="">All</option>
             {difficulties.map((diff) => (
@@ -108,19 +108,7 @@ const ChallengeFilters = () => {
           </select>
         </div>
 
-        {/* Category */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Category
-          </label>
-          <input
-            type="text"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="e.g. JavaScript"
-            className="w-full p-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-        </div>
+       
 
         {/* Companies - autocomplete input */}
         <div>
@@ -132,7 +120,7 @@ const ChallengeFilters = () => {
             placeholder="Type to search companies..."
             value={companyInput}
             onChange={(e) => setCompanyInput(e.target.value)}
-            className="w-full p-2 mb-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="w-full p-2 mb-2 rounded-lg border dark:bg-gray-700 text-gray-900 dark:border-gray-600 dark:text-white"
           />
           {companyInput && filteredCompanies.length > 0 && (
             <ul className="max-h-32 overflow-y-auto border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 space-y-1 cursor-pointer">
@@ -178,7 +166,7 @@ const ChallengeFilters = () => {
             placeholder="Type to search topics..."
             value={topicInput}
             onChange={(e) => setTopicInput(e.target.value)}
-            className="w-full p-2 mb-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="w-full p-2 mb-2 rounded-lg border text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
           {topicInput && filteredTopics.length > 0 && (
             <ul className="max-h-32 overflow-y-auto border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 space-y-1 cursor-pointer">

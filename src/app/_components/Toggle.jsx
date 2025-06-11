@@ -1,24 +1,32 @@
-
 "use client";
-import React, { useEffect } from 'react'
-import { useTheme } from "next-themes";
+import React, { useEffect, useState } from 'react'
+
 import { DarkModeSwitch } from 'react-toggle-dark-mode';
 
-
 const ToggleButton = () => {
-    const { systemTheme, theme, setTheme } = useTheme();
-    // const currentTheme = theme === 'system' ? systemTheme : theme;
-    const [isDarkMode, setDarkMode] = React.useState(theme=="dark"?true:false);
-    useEffect(()=>{
-        setDarkMode(theme=="dark"?true:false);
-    })
-    return (
+    const [toggle,setToggle]=useState(() => {
+  
+        return localStorage.getItem("theme") === "dark" ? true : false;
+      });
       
+      useEffect(()=>{
+        if(toggle){
+          document.documentElement.classList.add("dark")
+          localStorage.setItem("theme", "dark");
+        }
+        else{
+          document.documentElement.classList.remove("dark")
+          localStorage.setItem("theme", "light");
+        }
+      },[toggle])
+    return (
         <DarkModeSwitch
-        checked={isDarkMode}
-        onChange={ () => theme == "dark"? setTheme('light'): setTheme("dark")}
+            checked={toggle}
+            onChange={setToggle}
+            size={24}
+           
         />
-    )
-}
+    );
+};
 
-export default ToggleButton
+export default ToggleButton;
