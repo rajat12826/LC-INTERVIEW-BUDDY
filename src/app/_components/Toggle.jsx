@@ -1,30 +1,39 @@
 "use client";
+import { useLocalStorage } from '@/utils/useLocalStorage';
 import React, { useEffect, useState } from 'react'
-
 import { DarkModeSwitch } from 'react-toggle-dark-mode';
 
+// Custom hook for safe localStorage access
+
+
 const ToggleButton = () => {
-    const [toggle,setToggle]=useState(() => {
-  
-        return localStorage.getItem("theme") === "dark" ? true : false;
-      });
-      
-      useEffect(()=>{
-        if(toggle){
-          document.documentElement.classList.add("dark")
-          localStorage.setItem("theme", "dark");
+    const [toggle, setToggle, mounted] = useLocalStorage("theme", false);
+    const isDark = toggle === "dark" || toggle === true;
+
+    useEffect(() => {
+        if (!mounted) return;
+        
+        if (isDark) {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
         }
-        else{
-          document.documentElement.classList.remove("dark")
-          localStorage.setItem("theme", "light");
-        }
-      },[toggle])
+    }, [isDark, mounted]);
+
+    const handleToggle = (checked) => {
+        setToggle(checked ? "dark" : "light");
+    };
+
+    // Prevent hydration mismatch by not rendering until mounted
+    if (!mounted) {
+        return <div style={{ width: 24, height: 24 }} />; // Placeholder to prevent layout shift
+    }
+
     return (
         <DarkModeSwitch
-            checked={toggle}
-            onChange={setToggle}
+            checked={isDark}
+            onChange={handleToggle}
             size={24}
-           
         />
     );
 };
