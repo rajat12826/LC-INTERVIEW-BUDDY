@@ -1,4 +1,6 @@
+
 @import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], .dark, .dark *));
 
 :root {
   --background: #ffffff;
@@ -11,6 +13,18 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
+@theme {
+  --font-product: 'Product', sans-serif;
+  --font-playground: 'Playground', monospace;
+  --color-clifford: #da373d;
+}
+@font-face {
+  font-family: 'Product';
+  src: url('../lib/Product.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+/* @config "./tailwind.config.mjs"; */
 
 @media (prefers-color-scheme: dark) {
   :root {
