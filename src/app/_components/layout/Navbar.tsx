@@ -1,4 +1,4 @@
-import supabase from '@/lib/supabase' // Changed import
+// import supabase from '@/lib/supabase' // Changed import
 // import AuthButton from '../auth/AuthButton'
 import Link from 'next/link'
 import { Code } from 'lucide-react'
@@ -6,7 +6,7 @@ import ToggleButton from '../Toggle'
 import { UserButton } from '@clerk/nextjs'
 
 export default async function Navbar() {
-  const { data: { user } } = await supabase.auth.getUser()
+  // const { data: { user } } = await supabase.auth.getUser()
 
   return (
     <nav className="bg-white  dark:bg-gray-900   shadow-sm border-b">
