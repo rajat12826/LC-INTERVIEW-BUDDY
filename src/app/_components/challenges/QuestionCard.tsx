@@ -6,7 +6,7 @@ import { BadgeCheck, ArrowUpRight, ChevronUp, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
 
 interface Question {
-  Difficulty: 'EASY' | 'MEDIUM' | 'HARD'
+  Difficulty: string
   Question: string
   'Frequency (Number of Companies)': number
   'Link of Question': string

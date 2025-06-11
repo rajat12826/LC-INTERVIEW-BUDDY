@@ -21,8 +21,8 @@ export default function ChallengesPage() {
     const matchesDifficulty =
       difficulty === '' || q.Difficulty.toLowerCase() === difficulty.toLowerCase()
 
-    const matchesCategory =
-      category === '' || (q.Category?.toLowerCase() === category.toLowerCase())
+    // const matchesCategory =
+    //   category === '' || (q.Category?.toLowerCase() === category.toLowerCase())
 
     const matchesCompanies =
       companies.length === 0 ||
@@ -35,7 +35,7 @@ export default function ChallengesPage() {
     return (
       matchesSearch &&
       matchesDifficulty &&
-      matchesCategory &&
+      // matchesCategory &&
       matchesCompanies &&
       matchesTopics
     )

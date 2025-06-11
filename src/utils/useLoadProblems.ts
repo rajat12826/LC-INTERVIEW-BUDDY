@@ -44,10 +44,10 @@ export default function useLoadProblems() {
         const topicFreq: Record<string, number> = {}
 
         problems.forEach((problem) => {
-          problem.companies.forEach((company) => {
+          problem.companies.forEach((company:any) => {
             companyFreq[company] = (companyFreq[company] || 0) + 1
           })
-          problem.topics.forEach((topic) => {
+          problem.topics.forEach((topic:any) => {
             topicFreq[topic] = (topicFreq[topic] || 0) + 1
           })
         })

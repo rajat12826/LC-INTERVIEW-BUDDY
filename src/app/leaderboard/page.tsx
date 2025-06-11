@@ -1,41 +1,41 @@
-import supabase from '@/lib/supabase' // Changed import
+// import supabase from '@/lib/supabase' // Changed import
 import { Trophy, Medal, Award } from 'lucide-react'
 
 export default async function LeaderboardPage() {
-  const { data: leaderboard } = await supabase
-    .from('user_progress')
-    .select(`
-      user_id,
-      profiles!inner(username, full_name, avatar_url),
-      completed,
-      completed_at
-    `)
-    .eq('completed', true)
-    .order('completed_at', { ascending: true })
+  // const { data: leaderboard } = await supabase
+  //   .from('user_progress')
+  //   .select(`
+  //     user_id,
+  //     profiles!inner(username, full_name, avatar_url),
+  //     completed,
+  //     completed_at
+  //   `)
+  //   .eq('completed', true)
+  //   .order('completed_at', { ascending: true })
   // Group by user and count completions
-  const userStats = leaderboard?.reduce((acc: any, curr: any) => {
-    const userId = curr.user_id
-    if (!acc[userId]) {
-      acc[userId] = {
-        user: curr.profiles,
-        completedChallenges: 0,
-        lastCompleted: curr.completed_at
-      }
-    }
-    acc[userId].completedChallenges++
-    if (new Date(curr.completed_at) > new Date(acc[userId].lastCompleted)) {
-      acc[userId].lastCompleted = curr.completed_at
-    }
-    return acc
-  }, {})
+  // const userStats = leaderboard?.reduce((acc: any, curr: any) => {
+  //   const userId = curr.user_id
+  //   if (!acc[userId]) {
+  //     acc[userId] = {
+  //       user: curr.profiles,
+  //       completedChallenges: 0,
+  //       lastCompleted: curr.completed_at
+  //     }
+  //   }
+  //   acc[userId].completedChallenges++
+  //   if (new Date(curr.completed_at) > new Date(acc[userId].lastCompleted)) {
+  //     acc[userId].lastCompleted = curr.completed_at
+  //   }
+  //   return acc
+  // }, {})
 
-  const sortedUsers = Object.values(userStats || {})
-    .sort((a: any, b: any) => b.completedChallenges - a.completedChallenges)
-    .slice(0, 50)
+  // const sortedUsers = Object.values(userStats || {})
+  //   .sort((a: any, b: any) => b.completedChallenges - a.completedChallenges)
+  //   .slice(0, 50)
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
+      {/* <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Leaderboard</h1>
         <p className="text-lg text-gray-600">
           See how you rank against other developers
@@ -101,7 +101,7 @@ export default async function LeaderboardPage() {
             <p className="text-gray-500">No completed challenges yet. Be the first!</p>
           </div>
         )}
-      </div>
+      </div> */}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 import Link from 'next/link'
-import supabase from '@/lib/supabase'
+// import supabase from '@/lib/supabase'
 import { Code, Trophy, Users, ArrowRight } from 'lucide-react'
 
 export default async function Home() {
@@ -66,7 +66,7 @@ export default async function Home() {
   )
 }
 
-function FeatureCard({ icon, title, description }) {
+function FeatureCard({ icon, title, description }:{icon:any,title:any,description:any}) {
   return (
     <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <div className="bg-blue-100 dark:bg-indigo-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
