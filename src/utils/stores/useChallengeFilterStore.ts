@@ -4,8 +4,9 @@ type FilterState = {
   search: string
   difficulty: string
   category: string
-  companies: string[]   // array of selected companies
-  topics: string[]      // array of selected topics
+  companies: string[]
+  topics: string[]
+  solved: 'all' | 'solved' | 'unsolved'
   setSearch: (search: string) => void
   setDifficulty: (difficulty: string) => void
   setCategory: (category: string) => void
@@ -13,6 +14,7 @@ type FilterState = {
   removeCompany: (company: string) => void
   addTopic: (topic: string) => void
   removeTopic: (topic: string) => void
+  setSolved: (solved: 'all' | 'solved' | 'unsolved') => void
   clearAll: () => void
 }
 
@@ -22,6 +24,7 @@ export const useChallengeFilterStore = create<FilterState>((set) => ({
   category: '',
   companies: [],
   topics: [],
+  solved: 'all',
   setSearch: (search) => set({ search }),
   setDifficulty: (difficulty) => set({ difficulty }),
   setCategory: (category) => set({ category }),
@@ -45,6 +48,7 @@ export const useChallengeFilterStore = create<FilterState>((set) => ({
     set((state) => ({
       topics: state.topics.filter((t) => t !== topic),
     })),
+  setSolved: (solved) => set({ solved }),
   clearAll: () =>
     set({
       search: '',
@@ -52,5 +56,6 @@ export const useChallengeFilterStore = create<FilterState>((set) => ({
       category: '',
       companies: [],
       topics: [],
+      solved: 'all',
     }),
 }))

@@ -9,7 +9,9 @@ export default function ChallengesPage() {
   const allQuestions = useQuestionStore((state) => state.allQuestions)
 
   // Destructure filter state
-  const { search, difficulty, category, companies, topics, clearAll } = useChallengeFilterStore()
+const { search, difficulty, category, companies, topics, solved, clearAll } = useChallengeFilterStore()
+
+const isSolved = useQuestionStore((state) => state.isSolved)
 
   // Filter questions based on selected filters
   const filteredQuestions = allQuestions?.filter((q) => {
@@ -31,13 +33,19 @@ export default function ChallengesPage() {
     const matchesTopics =
       topics.length === 0 ||
       topics.some((topic) => q.Topics.toLowerCase().includes(topic.toLowerCase()))
+   
+  const matchesSolved =
+    solved === 'all' ||
+    (solved === 'solved' && isSolved(q.Question)) ||
+    (solved === 'unsolved' && !isSolved(q.Question)) 
 
     return (
       matchesSearch &&
       matchesDifficulty &&
       // matchesCategory &&
       matchesCompanies &&
-      matchesTopics
+      matchesTopics &&
+      matchesSolved
     )
   })
 

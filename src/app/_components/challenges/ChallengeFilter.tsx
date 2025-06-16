@@ -24,6 +24,8 @@ const ChallengeFilters = () => {
     addTopic,
     removeTopic,
     clearAll,
+    solved,
+    setSolved
   } = useChallengeFilterStore()
   const { allProblems, allCompanies, allTopics }=useLoadProblems()
   // console.log(allTopics);
@@ -107,6 +109,21 @@ const ChallengeFilters = () => {
             ))}
           </select>
         </div>
+{/* Solved Filter */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+    Status
+  </label>
+  <select
+    value={solved}
+    onChange={(e) => setSolved(e.target.value as 'all' | 'solved' | 'unsolved')}
+    className="w-full p-2 text-gray-900 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+  >
+    <option value="all">All</option>
+    <option value="solved">Solved</option>
+    <option value="unsolved">Unsolved</option>
+  </select>
+</div>
 
        
 

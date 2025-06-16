@@ -2,8 +2,9 @@
 
 import { FC, useState } from 'react'
 import Link from 'next/link'
-import { BadgeCheck, ArrowUpRight, ChevronUp, ChevronDown } from 'lucide-react'
+import { BadgeCheck, ArrowUpRight, ChevronUp, ChevronDown, Check, Circle } from 'lucide-react'
 import clsx from 'clsx'
+import { useQuestionStore } from '@/utils/stores/useQuestionStore'
 
 interface Question {
   Difficulty: string
@@ -32,6 +33,10 @@ const getDifficultyStyle = (difficulty: string) => {
 }
 
 const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
+ const { markAsSolved, isSolved } = useQuestionStore()
+
+const solved = isSolved(question.Question)
+
     const companyArray=question['Companies Asking This Question']
     .split(',')
   const companies = companyArray
@@ -140,7 +145,8 @@ console.log();
           </div>
         )}
       </div>
-      <Link
+    <div className='flex justify-between'>
+  <Link
         href={question['Link of Question']}
         target="_blank"
         rel="noopener noreferrer"
@@ -148,6 +154,40 @@ console.log();
       >
         View on LeetCode <ArrowUpRight className="w-4 h-4 ml-1" />
       </Link>
+      {/* Solved Status */}
+
+<button
+          onClick={() => markAsSolved(question.Question)}
+          className={clsx(
+            "group relative inline-flex items-center justify-center px-2 py-1 text-sm font-semibold rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm",
+            solved
+              ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-emerald-500/25 hover:shadow-emerald-500/40 focus:ring-emerald-500 border border-emerald-500"
+              : "bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-500 hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-600 dark:hover:to-gray-500 focus:ring-gray-500 shadow-gray-300/20 hover:shadow-gray-400/30"
+          )}
+        >
+          <div className="flex items-center space-x-2">
+            {solved ? (
+              <>
+                <Check className="w-4 h-4 transition-transform group-hover:scale-110" />
+                <span>Solved</span>
+              </>
+            ) : (
+              <>
+                <Circle className="w-4 h-4 transition-transform group-hover:scale-110" />
+                <span>Mark as Done</span>
+              </>
+            )}
+          </div>
+          
+          {/* Subtle glow effect for solved state */}
+          {solved && (
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-400/20 to-green-500/20 blur-sm -z-10 group-hover:blur-md transition-all duration-200" />
+          )}
+        </button>
+
+    </div>
+
+
     </div>
   )
 }
