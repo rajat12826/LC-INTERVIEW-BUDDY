@@ -34,7 +34,6 @@ export default clerkMiddleware(async (auth, req) => {
         return NextResponse.redirect(new URL('/subscription', req.url));
       }
       
-      // If user record is not found or they are not premium, redirect to subscription page
       if (!userRecord || !userRecord.is_premium) {
         console.log(`User ${userId} is not premium. Redirecting to subscription.`);
         return NextResponse.redirect(new URL('/subscription', req.url));
