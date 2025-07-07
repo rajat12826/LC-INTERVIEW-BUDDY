@@ -17,9 +17,7 @@ export async function POST(request: Request) {
     const productWithQuantity = { product_id: productId as string, quantity: 1 };
 
     const response = await dodopayments.payments.create({
-      // Use the billing details provided in the request body,
-      // or default to empty strings if not provided.
-      // Ensure 'country' is a valid ISO 3166-1 alpha-2 code.
+    
       billing: {
         city: billingDetails?.city || "",
         country: billingDetails?.country || "US", // Default to "US" if not provided
