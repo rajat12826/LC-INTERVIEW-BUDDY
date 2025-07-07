@@ -40,7 +40,7 @@ export default clerkMiddleware(async (auth, req) => {
         return NextResponse.redirect(new URL('/subscription', req.url));
       }
       
-      // If user is premium, allow them to proceed
+    
       console.log(`User ${userId} is premium. Allowing access to ${req.nextUrl.pathname}`);
       return NextResponse.next();
       
