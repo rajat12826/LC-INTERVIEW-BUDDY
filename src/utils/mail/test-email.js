@@ -1,4 +1,4 @@
-// test-email.js
+
 const nodemailer = require('nodemailer');
 
 console.log( process.env.SMTP_HOST,
