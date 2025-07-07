@@ -29,7 +29,7 @@ export default clerkMiddleware(async (auth, req) => {
         .eq('clerk_user_id', userId)
         .single();
       
-      if (error && error.code !== 'PGRST116') { // PGRST116 means "no rows found"
+      if (error && error.code !== 'PGRST116') { 
         console.error("Middleware Supabase fetch error:", error);
         return NextResponse.redirect(new URL('/subscription', req.url));
       }
