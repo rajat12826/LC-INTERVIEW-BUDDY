@@ -1,7 +1,7 @@
 import { dodopayments } from "@/lib/dodopayments";
 import { NextResponse } from "next/server";
 
-// Changed to POST request to accept a request body with user input
+
 export async function POST(request: Request) {
   try {
   
