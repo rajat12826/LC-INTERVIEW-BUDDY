@@ -4,15 +4,13 @@ import { supabase } from '@/lib/supabase';
 export async function checkAndRefreshPremiumStatus(clerkUserId: string, email: string) {
   try {
     console.log(`Checking premium status for: ${clerkUserId}, ${email}`);
-    
-    // First try to find by clerk_user_id
+  
     let { data: user, error } = await supabase
       .from('lc_users')
       .select('is_premium, email, clerk_user_id')
       .eq('clerk_user_id', clerkUserId)
       .single();
 
-    // If not found by clerk_user_id, try by email
     if (error && error.code === 'PGRST116') {
       console.log('User not found by clerk_user_id, trying email...');
       const normalizedEmail = email.toLowerCase().trim();
@@ -24,7 +22,7 @@ export async function checkAndRefreshPremiumStatus(clerkUserId: string, email: s
         .single();
         
       if (emailError && emailError.code === 'PGRST116') {
-        // Try case-insensitive search
+      
         const { data: userByIlike, error: ilikeError } = await supabase
           .from('lc_users')
           .select('is_premium, email, clerk_user_id')
