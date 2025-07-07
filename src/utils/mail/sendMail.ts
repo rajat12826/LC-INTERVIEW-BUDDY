@@ -26,11 +26,7 @@ export const sendMail = async (options: EmailOptions): Promise<void> => {
       },
     });
     const templatePath = path.join(process.cwd(), 'src','utils', 'mail', `${options.templateName}`);
-    // const templatePath = path.join(
-    //   __dirname,
-      
-    //   options.templateName
-    // );
+   
     const html = await ejs.renderFile(templatePath, options.data);
 
     await transporter.sendMail({
