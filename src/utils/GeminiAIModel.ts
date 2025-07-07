@@ -10,11 +10,11 @@ const model = genAI.getGenerativeModel({
 });
 
 const generationConfig = {
-  temperature: 0.7,        // Reduced for more consistent responses
+  temperature: 0.7,      
   topP: 0.95,
   topK: 40,
   maxOutputTokens: 8192,
-  responseMimeType: "text/plain",  // Changed from "application/json" to "text/plain"
+  responseMimeType: "text/plain",  
 };
 
 export const chatSession = model.startChat({
