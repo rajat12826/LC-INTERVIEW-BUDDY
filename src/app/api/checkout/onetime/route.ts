@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 // Changed to POST request to accept a request body with user input
 export async function POST(request: Request) {
   try {
-    // Parse the request body to get the product ID, customer, and billing details
+  
     const { productId, customerEmail, customerName, billingDetails } = await request.json();
 
     if (!productId || !customerEmail) {
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       },
       customer: {
         email: customerEmail,
-        name: customerName || customerEmail, // Use customerName if available, else fallback to email
+        name: customerName || customerEmail, 
       },
       payment_link: true, // Request a payment link
       product_cart: [productWithQuantity],
