@@ -6,10 +6,10 @@ import { createClerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { sendMail } from "@/utils/mail/sendMail";
 
-// Initialize webhook client
+
 const webhook = new Webhook(process.env.DODO_PAYMENTS_WEBHOOK_KEY!);
 
-// Initialize Clerk client once at the top level
+
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
 });
