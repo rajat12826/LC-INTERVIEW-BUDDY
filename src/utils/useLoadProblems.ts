@@ -19,10 +19,7 @@ export default function useLoadProblems() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // const response = await fetch('questions_data.json')
-        // if (!response.ok) throw new Error('Failed to load data')
-
-        // const data = await response.json()
+       
         const problems = data.map((problem: any) => ({
           id: problem['Link of Question'] || Math.random().toString(36),
           title: problem.Question,
@@ -38,7 +35,7 @@ export default function useLoadProblems() {
             .map((t: string) => t.trim())
             .filter(Boolean),
         }))
-// console.log(problems);
+
 
         const companyFreq: Record<string, number> = {}
         const topicFreq: Record<string, number> = {}
@@ -51,7 +48,7 @@ export default function useLoadProblems() {
             topicFreq[topic] = (topicFreq[topic] || 0) + 1
           })
         })
-// console.log(   Object.keys(topicFreq).sort((a, b) => topicFreq[b] - topicFreq[a]));
+
 
         setAllCompanies(
           Object.keys(companyFreq).sort((a, b) => companyFreq[b] - companyFreq[a])
@@ -67,7 +64,7 @@ export default function useLoadProblems() {
 
 
     fetchData()
-    // console.log(allTopics);
+  
   }, [])
 
   return { allProblems, allCompanies, allTopics }
