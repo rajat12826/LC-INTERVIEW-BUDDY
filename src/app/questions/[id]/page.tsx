@@ -53,7 +53,7 @@ export default function AITutorPage() {
     
     if (foundQuestion) {
       setQuestion(foundQuestion)
-      // Initialize chat with welcome message
+      
       const welcomeMessage: ChatMessage = {
         role: 'assistant',
         content: `👋 Hello! I'm your AI coding mentor, ready to guide you through "${foundQuestion.Question}". 
