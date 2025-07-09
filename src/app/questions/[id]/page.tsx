@@ -153,7 +153,7 @@ What would you like to explore first?`,
   }
 
   const formatMessageContent = (content: string) => {
-    // Simple markdown-like formatting
+    
     let formatted = content
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-white">$1</strong>')
       .replace(/\`(.*?)\`/g, '<code class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-red-600 dark:text-red-400 rounded text-sm font-mono">$1</code>')
@@ -234,7 +234,7 @@ What would you like to explore first?`,
                   </svg>
                 </button>
 
-                {/* View Problem Button - Responsive */}
+           
                 <a
                   href={question["Link of Question"]}
                   target="_blank"
@@ -295,10 +295,10 @@ What would you like to explore first?`,
             </div>
           </div>
 
-          {/* Chat Container - Responsive Layout */}
+     
           <div className="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 min-h-0">
             
-            {/* Mobile Sidebar Overlay */}
+           
             {isSidebarOpen && (
               <div className="lg:hidden fixed inset-0 z-50 flex">
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
@@ -443,10 +443,10 @@ What would you like to explore first?`,
                       </div>
                     </div>
                   )}
-                  <div ref={messagesEndRef} /> {/* For auto-scrolling */}
+                  <div ref={messagesEndRef} /> 
                 </div>
 
-                {/* Chat Input Area - Responsive */}
+             
                 <div className={`p-3 sm:p-4 lg:p-6 border-t border-gray-200 dark:border-gray-800/50 bg-white/80 dark:bg-gray-900/80 ${isInputFocused ? 'ring-2 ring-blue-500/50' : ''} transition-all duration-200 rounded-b-2xl sm:rounded-b-3xl`}>
                   <div className="flex items-center gap-3">
                     <textarea
