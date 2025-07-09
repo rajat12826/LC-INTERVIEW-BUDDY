@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
 
-import { chatSession } from '@/utils/GeminiAIModel' // Ensure this path is correct for your Gemini API setup
+import { chatSession } from '@/utils/GeminiAIModel' 
 
 type Question = {
   Difficulty: string
@@ -45,7 +45,7 @@ export default function AITutorPage() {
   useEffect(() => {
     const questionId = params.id as string
     
-    // Try to get question from store first, then by ID
+    
     let foundQuestion = currentQuestion
     if (!foundQuestion) {
       foundQuestion = getQuestionById(questionId) || null
