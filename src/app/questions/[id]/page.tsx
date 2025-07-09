@@ -118,8 +118,7 @@ What would you like to explore first?`,
       const result = await chatSession.sendMessage(context)
       const response = result.response
       const text = response.text()
-
-      // Simulate typing delay for better UX
+    
       setTimeout(() => {
         const assistantMessage: ChatMessage = {
           role: 'assistant',
