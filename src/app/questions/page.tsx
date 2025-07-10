@@ -8,12 +8,12 @@ import { useQuestionStore } from '@/utils/stores/useQuestionStore'
 export default function ChallengesPage() {
   const allQuestions = useQuestionStore((state) => state.allQuestions)
 
-  // Destructure filter state
+  
 const { search, difficulty, category, companies, topics, solved, clearAll } = useChallengeFilterStore()
 
 const isSolved = useQuestionStore((state) => state.isSolved)
 
-  // Filter questions based on selected filters
+
   const filteredQuestions = allQuestions?.filter((q) => {
     const matchesSearch =
       search === '' ||
@@ -23,9 +23,7 @@ const isSolved = useQuestionStore((state) => state.isSolved)
     const matchesDifficulty =
       difficulty === '' || q.Difficulty.toLowerCase() === difficulty.toLowerCase()
 
-    // const matchesCategory =
-    //   category === '' || (q.Category?.toLowerCase() === category.toLowerCase())
-
+   
     const matchesCompanies =
       companies.length === 0 ||
       companies.some((comp) => q['Companies Asking This Question'].includes(comp))
