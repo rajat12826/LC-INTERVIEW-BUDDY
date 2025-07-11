@@ -1,24 +1,19 @@
 'use client'
 
-import Link from 'next/link'
 import { Code, Trophy, Users, ArrowRight } from 'lucide-react'
 import Navbar from './_components/layout/Navbar'
-import { useUser } from '@clerk/nextjs'; // Import Clerk hooks
-import { useRouter, useSearchParams } from 'next/navigation'; // Import Next.js router
-import { useEffect, useState } from 'react'; // Import React hooks (useEffect is removed)
-import { supabase } from '@/lib/supabase'; // Assuming this correctly imports your Supabase client
+import { useUser } from '@clerk/nextjs'; 
+import { useRouter, useSearchParams } from 'next/navigation'; 
+import { useEffect, useState } from 'react'; 
+import { supabase } from '@/lib/supabase'; 
 import { toast } from 'sonner';
 
-// Note: The supabase client initialization code that was here previously
-// has been moved to '@/lib/supabase' as per your import.
-// Ensure '@/lib/supabase' correctly exports 'supabase' as:
-// export const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
 
 
 export default function Home() {
-  const { isSignedIn, user, isLoaded } = useUser(); // Get user and loading status from Clerk
+  const { isSignedIn, user, isLoaded } = useUser(); 
   const router = useRouter();
-  const [isProcessingClick, setIsProcessingClick] = useState(false); // New state for button loading
+  const [isProcessingClick, setIsProcessingClick] = useState(false); 
   const searchParams = useSearchParams(); 
   
   useEffect(() => {
