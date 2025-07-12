@@ -65,14 +65,13 @@ export default function Home() {
     }
   }, [searchParams, router]);
 
-  // Removed useEffect to prevent automatic redirection on page load
   const handleStartPracticingClick = async () => {
-    // Only proceed if Clerk user data is loaded and not already processing
+   
     if (!isLoaded || isProcessingClick) {
       return;
     }
 
-    setIsProcessingClick(true); // Indicate that processing has started
+    setIsProcessingClick(true); 
 
     if (isSignedIn && user) {
       const userEmail = user.emailAddresses[0]?.emailAddress;
@@ -96,7 +95,7 @@ export default function Home() {
 
         if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means "no rows found"
           console.error("Error fetching user from Supabase:", fetchError);
-          // Handle other types of fetch errors (e.g., network issues)
+        
           setIsProcessingClick(false); // Stop processing
           return;
         }
@@ -136,11 +135,8 @@ export default function Home() {
         setIsProcessingClick(false); // Stop processing
       }
     } else if (isLoaded && !isSignedIn) {
-      // User is not signed in, clicking "Start Practicing" should initiate Clerk's sign-in flow.
-      // Clerk's components (like SignInButton/SignUpButton) will handle the login flow.
-      // For now, we'll let the button simply be a Link to /questions, relying on middleware protection.
-      router.push('/sign-in'); // Redirect to Clerk's sign-in page if not signed in
-      setIsProcessingClick(false); // Stop processing
+     
+      setIsProcessingClick(false); 
     }
   };
 
@@ -157,7 +153,7 @@ export default function Home() {
             <p className="text-xl md:text-2xl mb-8 text-blue-100 dark:text-indigo-200">
               Practice top LeetCode-style questions and get interview-ready
             </p>
-            {/* Changed to a button to trigger the click handler */}
+  
             <button
               onClick={handleStartPracticingClick}
               disabled={isProcessingClick || !isLoaded} // Disable while loading Clerk or processing click
