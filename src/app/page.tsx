@@ -108,9 +108,9 @@ export default function Home() {
           const newUuid = crypto.randomUUID(); // Generates a v4 UUID
 
           const { error: insertError } = await supabase
-            .from('lc_users') // Changed table name to lc_users
+            .from('lc_users') 
             .insert({
-              id: newUuid, // IMPORTANT: Provide the generated UUID for the 'id' column
+              id: newUuid, 
               clerk_user_id: clerkUserId, 
               email: userEmail,
               name: userName, // Store user's name
