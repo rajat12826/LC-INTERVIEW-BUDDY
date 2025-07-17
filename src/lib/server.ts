@@ -1,7 +1,6 @@
 // src/lib/server.ts
 import { createClient } from '@supabase/supabase-js';
 
-// Ensure these environment variables are set in your .env.local and deployment environment
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 
