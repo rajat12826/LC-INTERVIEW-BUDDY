@@ -58,7 +58,7 @@ export const useQuestionStore = create<QuestionState>()(
         return match ? match[1] : ''
       },
 
-      // Find question by ID (extracted from URL)
+   
       getQuestionById: (id: string) => {
         const { allQuestions, getQuestionIdFromUrl } = get()
         return allQuestions.find((question) => {
