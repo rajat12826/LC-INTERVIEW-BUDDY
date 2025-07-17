@@ -111,7 +111,7 @@ export default function Home() {
             .from('lc_users') // Changed table name to lc_users
             .insert({
               id: newUuid, // IMPORTANT: Provide the generated UUID for the 'id' column
-              clerk_user_id: clerkUserId, // Store Clerk's user ID
+              clerk_user_id: clerkUserId, 
               email: userEmail,
               name: userName, // Store user's name
               is_premium: false
