@@ -10,7 +10,7 @@ export default  function Home() {
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
      <Navbar/>
-      {/* Hero Section */}
+     
       <section className="bg-gradient-to-r from-blue-600 to-blue-700 text-white dark:from-indigo-800 dark:to-indigo-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">

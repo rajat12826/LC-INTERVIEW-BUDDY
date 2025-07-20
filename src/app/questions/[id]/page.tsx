@@ -36,12 +36,12 @@ export default function AITutorPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Scroll to bottom of chat messages
+ 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  // Effect to load question and set initial message
+
   useEffect(() => {
     const questionId = params.id as string
     
