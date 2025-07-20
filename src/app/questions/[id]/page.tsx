@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
-import { GoogleGenerativeAI } from '@google/generative-ai' // Keep this import if you intend to use it directly, though chatSession is already imported
+
 import { chatSession } from '@/utils/GeminiAIModel' // Ensure this path is correct for your Gemini API setup
 
 type Question = {
@@ -113,7 +113,8 @@ What would you like to explore first?`,
       ${messages.map(m => `${m.role}: ${m.content}`).join('\n')}
       
       Student's question: ${userInput}`
-
+        console.log(context);
+        
       const result = await chatSession.sendMessage(context)
       const response = result.response
       const text = response.text()

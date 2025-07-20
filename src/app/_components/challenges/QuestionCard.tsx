@@ -138,7 +138,7 @@ const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
           rel="noopener noreferrer"
           className="inline-flex items-center text-sm text-blue-600 dark:text-indigo-300 font-medium hover:underline"
         >
-          View on LeetCode <ArrowUpRight className="w-4 h-4 ml-1" />
+          View on LeetCode <ArrowUpRight className="max-lg:hidden w-4 h-4 ml-1" />
         </Link>
 
         {/* Action Buttons */}
@@ -146,7 +146,7 @@ const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
           {/* AI Tutor Button */}
           <button
             onClick={handleAITutorClick}
-            className="inline-flex items-center justify-center px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+            className="inline-flex items-center justify-center px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
           >
             <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
