@@ -238,7 +238,7 @@ What would you like to explore first?`,
                   href={question["Link of Question"]}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-3 py-2 sm:px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-orange-600 hover:to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  className="inline-flex items-center px-3 py-2 sm:px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                 >
                   <span className="hidden sm:inline">View Problem</span>
                   <span className="sm:hidden">View</span>
