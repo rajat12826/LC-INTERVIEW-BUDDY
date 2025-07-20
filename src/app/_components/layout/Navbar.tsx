@@ -1,11 +1,12 @@
 // import supabase from '@/lib/supabase' // Changed import
 // import AuthButton from '../auth/AuthButton'
+"use client"
 import Link from 'next/link'
 import { Code } from 'lucide-react'
 import ToggleButton from '../Toggle'
 import { UserButton } from '@clerk/nextjs'
 
-export default async function Navbar() {
+export default  function Navbar() {
   // const { data: { user } } = await supabase.auth.getUser()
 
   return (
@@ -36,9 +37,9 @@ export default async function Navbar() {
               >
                 Leaderboard
               </Link> */}
-              {/* <div className="flex justify-center ">
+               <div className="flex justify-center "> 
           <UserButton />
-        </div> */}
+        </div> 
                 <div className="absolute top-0 right-0 p-5">
                               <ToggleButton />
                             </div>

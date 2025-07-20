@@ -2,6 +2,7 @@
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
 import React, { useEffect } from 'react'
 import questionsJson from '../../lib/questions.json'
+import Navbar from '../_components/layout/Navbar'
 function layout({
     children,
   }: {
@@ -14,7 +15,9 @@ function layout({
       setQuestions(questionsJson)
     }, [])
   return (
-    <div>{children}</div>
+    <div>
+     <Navbar/>
+      {children}</div>
   )
 }
 

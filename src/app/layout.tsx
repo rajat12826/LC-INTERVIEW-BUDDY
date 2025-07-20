@@ -6,6 +6,7 @@ import Navbar from './_components/layout/Navbar'
 import { Toaster } from "sonner";
 // import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from 'next-themes';
+import { ClerkProvider } from '@clerk/nextjs';
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
@@ -31,13 +32,13 @@ export default function RootLayout({
 
         
           
-          {/* <ClerkProvider> */}
-          <Navbar />
+          <ClerkProvider>
+          {/* <Navbar /> */}
           <Toaster />
           {/* <Header/> */}
             {children}
 
-          {/* </ClerkProvider> */}
+          </ClerkProvider>
         
         </div>
         </ThemeProvider>
