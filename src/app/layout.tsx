@@ -20,11 +20,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Favicon */}
+        
         <link rel="icon" href="/logo.ico" type="image/x-icon" />
       </head>
       <body className={inter.className}>
-        {/* ThemeProvider should wrap the entire content where theme is applied */}
+
         <ThemeProvider attribute="class">
           <div className="min-h-screen bg-gray-50 font-product">
             <ClerkProvider>
