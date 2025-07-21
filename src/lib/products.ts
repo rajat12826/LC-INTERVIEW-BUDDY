@@ -1,8 +1,8 @@
-import { dodoPayments } from "./dodopayments";
+import { dodopayments } from "./dodopayments";
 
 async function listProducts() {
     try {
-        const products=await dodoPayments.products.list()
+        const products=await dodopayments.products.list()
         console.log("------------PRODUCT START----------");
         
         console.log(products);
