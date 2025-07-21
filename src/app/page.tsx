@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { Code, Trophy, Users, ArrowRight } from 'lucide-react'
 import Navbar from './_components/layout/Navbar'
 import { useUser } from '@clerk/nextjs'; // Import Clerk hooks
-import { useRouter } from 'next/navigation'; // Import Next.js router
-import { useState } from 'react'; // Import React hooks (useEffect is removed)
+import { useRouter, useSearchParams } from 'next/navigation'; // Import Next.js router
+import { useEffect, useState } from 'react'; // Import React hooks (useEffect is removed)
 import { supabase } from '@/lib/supabase'; // Assuming this correctly imports your Supabase client
+import { toast } from 'sonner';
 
 // Note: The supabase client initialization code that was here previously
 // has been moved to '@/lib/supabase' as per your import.
@@ -18,6 +19,51 @@ export default function Home() {
   const { isSignedIn, user, isLoaded } = useUser(); // Get user and loading status from Clerk
   const router = useRouter();
   const [isProcessingClick, setIsProcessingClick] = useState(false); // New state for button loading
+  const searchParams = useSearchParams(); 
+  
+  useEffect(() => {
+    // Add debug logging
+    console.log('useEffect triggered - checking for payment params');
+    console.log('Current URL:', window.location.href);
+    console.log('All search params:', Object.fromEntries(searchParams.entries()));
+    
+    const paymentId = searchParams.get('payment_id');
+    const status = searchParams.get('status');
+    
+    console.log('Payment ID:', paymentId);
+    console.log('Status:', status);
+    console.log('Status exact match check:', status === 'succeeded');
+    console.log('Status type:', typeof status);
+
+    if (paymentId && status === 'succeeded') {
+      console.log('✅ Payment success conditions met - showing toast');
+      
+      // Show toast with explicit configuration
+      toast.success('🎉 Payment successful! You now have premium access.', {
+        duration: 5000,
+        // position: 'top-center',
+      });
+      
+     
+
+      // Clean up the URL after a longer delay to ensure toast shows
+      setTimeout(() => {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('payment_id');
+        newUrl.searchParams.delete('status');
+        
+        console.log('🧹 Cleaning URL - before:', window.location.href);
+        console.log('🧹 Cleaning URL - after:', newUrl.pathname + newUrl.search);
+        
+        router.replace(newUrl.pathname + newUrl.search);
+      }, 2000); // Increased delay to 2 seconds
+      
+    } else {
+      console.log('❌ Payment success conditions NOT met');
+      if (!paymentId) console.log('- Missing payment_id parameter');
+      if (status !== 'succeeded') console.log('- Status is not "succeeded", got:', status, 'type:', typeof status);
+    }
+  }, [searchParams, router]);
 
   // Removed useEffect to prevent automatic redirection on page load
   const handleStartPracticingClick = async () => {
@@ -92,7 +138,6 @@ export default function Home() {
     } else if (isLoaded && !isSignedIn) {
       // User is not signed in, clicking "Start Practicing" should initiate Clerk's sign-in flow.
       // Clerk's components (like SignInButton/SignUpButton) will handle the login flow.
-      // For a direct link, you might redirect to Clerk's sign-in page or open a modal.
       // For now, we'll let the button simply be a Link to /questions, relying on middleware protection.
       router.push('/sign-in'); // Redirect to Clerk's sign-in page if not signed in
       setIsProcessingClick(false); // Stop processing

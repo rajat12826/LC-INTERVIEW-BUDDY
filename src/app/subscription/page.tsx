@@ -97,7 +97,7 @@ function ProductCard({ product }: { product: Product }) {
       className="w-full h-14 text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-indigo-600 dark:to-purple-600 dark:hover:from-indigo-700 dark:hover:to-purple-700 border-0 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] disabled:transform-none disabled:opacity-50 group"
     >
       {loading ? (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 text-white">
           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
           Processing...
         </div>
@@ -255,8 +255,8 @@ const features: Feature[] = [
                 className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 dark:from-green-600 dark:to-blue-700 dark:hover:from-green-700 dark:hover:to-blue-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
               >
                 {checking ? (
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="flex items-center gap-3 text-white">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin dark:text-white "></div>
                     Verifying...
                   </div>
                 ) : (

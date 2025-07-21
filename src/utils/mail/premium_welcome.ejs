@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome to LC Interview Buddy Premium</title>
+    <style>
+        /* Reset styles */
+        body, table, td, div, p, a { 
+            -webkit-text-size-adjust: 100%; 
+            -ms-text-size-adjust: 100%; 
+        }
+        table, td { 
+            mso-table-lspace: 0pt; 
+            mso-table-rspace: 0pt; 
+        }
+        img { 
+            -ms-interpolation-mode: bicubic; 
+        }
+        
+        /* Main styles */
+        body { 
+            font-family: Arial, sans-serif !important;
+            line-height: 1.6; 
+            color: #333 !important; 
+            margin: 0 !important;
+            padding: 0 !important;
+              background-color: #f1f2f3 !important;
+            width: 100% !important;
+        }
+        
+        .main-container {
+            width: 100% !important;
+            background-color: #f1f2f3 !important;
+            padding: 20px 0 !important;
+        }
+        
+        .email-wrapper {
+            width: 100% !important;
+            max-width: 650px !important;
+            margin: 0 auto !important;
+            background-color: #ffffff !important;
+            border-radius: 16px !important;
+        }
+        
+        .header-section {
+            background-color: #4A90E2 !important;
+            padding: 30px 20px !important;
+            text-align: center !important;
+            border-radius: 16px 16px 0 0 !important;
+        }
+        
+        .logo-container {
+            width: 80px !important;
+            height: 80px !important;
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            border-radius: 20px !important;
+            margin: 0 auto 20px auto !important;
+            border: 2px solid rgba(255, 255, 255, 0.3) !important;
+            text-align: center !important;
+            padding: 8px !important;
+        }
+        
+        .logo-img {
+            width: 100% !important;
+            height: auto !important;
+            max-width: 64px !important;
+            max-height: 64px !important;
+            display: block !important;
+            margin: 0 auto !important;
+        }
+        
+        .header-title {
+            margin: 0 0 10px 0 !important;
+            font-size: 28px !important;
+            font-weight: bold !important;
+            color: #ffffff !important;
+            text-align: center !important;
+        }
+        
+        .header-subtitle {
+            margin: 0 !important;
+            font-size: 16px !important;
+            color: #ffffff !important;
+            text-align: center !important;
+        }
+        
+        .content-section {
+            padding: 30px 20px !important;
+            background-color: #ffffff !important;
+        }
+        
+        .greeting {
+            font-size: 18px !important;
+            margin: 0 0 20px 0 !important;
+            color: #2d3748 !important;
+            font-weight: bold !important;
+        }
+        
+        .main-text {
+            font-size: 15px !important;
+            color: #4a5568 !important;
+            margin: 0 0 20px 0 !important;
+            line-height: 1.6 !important;
+        }
+        
+        .highlight {
+            color: #4A90E2 !important;
+            font-weight: bold !important;
+        }
+        
+        .payment-details-box {
+            background-color: #f8fafc !important;
+            border-left: 6px solid #4A90E2 !important;
+            padding: 20px !important;
+            margin: 20px 0 !important;
+            border-radius: 12px !important;
+        }
+        
+        .section-title {
+            margin: 0 0 15px 0 !important;
+            color: #2d3748 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+        }
+        
+        .payment-info-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin: 0 !important;
+        }
+        
+        .payment-info-row {
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+        }
+        
+        .payment-info-label {
+            padding: 8px 10px 8px 0 !important;
+            color: #4a5568 !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            vertical-align: top !important;
+        }
+        
+        .payment-info-value {
+            padding: 8px 0 !important;
+            color: #4A90E2 !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            text-align: right !important;
+            vertical-align: top !important;
+            word-break: break-word !important;
+        }
+        
+        .features-box {
+            background-color: #edf2f7 !important;
+            padding: 20px !important;
+            border-radius: 16px !important;
+            margin: 20px 0 !important;
+        }
+        
+        .features-title {
+            margin: 0 0 15px 0 !important;
+            color: #2d3748 !important;
+            font-size: 18px !important;
+            font-weight: bold !important;
+            text-align: center !important;
+        }
+        
+        .feature-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+        
+        .feature-item {
+            background-color: #ffffff !important;
+            margin-bottom: 10px !important;
+            border-radius: 12px !important;
+            border-left: 4px solid #4A90E2 !important;
+        }
+        
+        .feature-icon-cell {
+            width: 40px !important;
+            padding: 12px 8px 12px 15px !important;
+            vertical-align: middle !important;
+            font-size: 16px !important;
+        }
+        
+        .feature-text-cell {
+            padding: 12px 15px 12px 8px !important;
+            color: #4a5568 !important;
+            font-size: 14px !important;
+            vertical-align: middle !important;
+        }
+        
+        .cta-section {
+            text-align: center !important;
+            margin: 25px 0 !important;
+        }
+        
+        .cta-button {
+            display: inline-block !important;
+            background-color: #4A90E2 !important;
+            color: #ffffff !important;
+            padding: 15px 30px !important;
+            text-decoration: none !important;
+            border-radius: 50px !important;
+            font-weight: bold !important;
+            font-size: 16px !important;
+            margin: 10px !important;
+        }
+        
+        .pro-tip-box {
+            background-color: #fff5f5 !important;
+            border-left: 6px solid #f56565 !important;
+            padding: 15px !important;
+            border-radius: 12px !important;
+            margin: 20px 0 !important;
+        }
+        
+        .support-box {
+            background-color: #e6fffa !important;
+            padding: 20px !important;
+            border-radius: 16px !important;
+            margin: 20px 0 !important;
+            text-align: center !important;
+        }
+        
+        .support-title {
+            margin: 0 0 10px 0 !important;
+            color: #2d3748 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+        }
+        
+        .support-text {
+            margin: 0 0 10px 0 !important;
+            font-size: 14px !important;
+            color: #4a5568 !important;
+        }
+        
+        .support-email {
+            color: #4A90E2 !important;
+            text-decoration: none !important;
+            font-weight: bold !important;
+        }
+        
+        .footer-section {
+            background-color: #1a202c !important;
+            color: #a0aec0 !important;
+            padding: 20px !important;
+            text-align: center !important;
+            font-size: 12px !important;
+            border-radius: 0 0 16px 16px !important;
+        }
+        
+        .footer-text {
+            margin: 5px 0 !important;
+            color: #a0aec0 !important;
+        }
+        
+        .footer-heart {
+            color: #f56565 !important;
+        }
+        
+        .signature {
+            font-size: 16px !important;
+            margin: 25px 0 0 0 !important;
+            color: #4a5568 !important;
+        }
+        
+        .signature-name {
+            color: #4A90E2 !important;
+            font-weight: bold !important;
+        }
+        
+        /* Mobile responsive */
+        @media only screen and (max-width: 600px) {
+            .main-container {
+                padding: 10px 0 !important;
+            }
+            .email-wrapper {
+                width: 95% !important;
+                margin: 0 auto !important;
+            }
+            .header-section {
+                padding: 20px 15px !important;
+            }
+            .logo-container {
+                width: 60px !important;
+                height: 60px !important;
+                padding: 6px !important;
+            }
+            .logo-img {
+                max-width: 48px !important;
+                max-height: 48px !important;
+            }
+            .header-title {
+                font-size: 22px !important;
+            }
+            .header-subtitle {
+                font-size: 14px !important;
+            }
+            .content-section {
+                padding: 20px 15px !important;
+            }
+            .greeting {
+                font-size: 16px !important;
+            }
+            .main-text {
+                font-size: 14px !important;
+            }
+            .payment-details-box,
+            .features-box,
+            .pro-tip-box,
+            .support-box {
+                padding: 15px !important;
+                margin: 15px 0 !important;
+            }
+            .payment-info-label,
+            .payment-info-value {
+                font-size: 13px !important;
+                padding: 6px 0 !important;
+            }
+            .feature-text-cell {
+                font-size: 13px !important;
+                padding: 10px 12px !important;
+            }
+            .cta-button {
+                padding: 12px 25px !important;
+                font-size: 14px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table class="main-container" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" valign="top">
+                <table class="email-wrapper" width="650" cellpadding="0" cellspacing="0" border="0" style="max-width: 650px; width: 100%; background-color: #ffffff; border-radius: 16px;">
+                    
+                    <!-- Header Section -->
+                    <tr>
+                        <td class="header-section" style="background-color: #4A90E2; padding: 30px 20px; text-align: center; border-radius: 16px 16px 0 0;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center">
+                                        <table class="logo-container" width="80" cellpadding="8" cellspacing="0" border="0" style="width: 80px; height: 80px; background-color: rgba(255, 255, 255, 0.2); border-radius: 20px; margin: 0 auto 20px auto; border: 2px solid rgba(255, 255, 255, 0.3);">
+                                            <tr>
+                                                <td align="center" valign="middle">
+                                                    <img src="https://res.cloudinary.com/metube128/image/upload/v1753111031/logo-1_zu7bua.png" alt="LC Interview Buddy Logo" class="logo-img" style="width: 100%; height: auto; max-width: 64px; max-height: 64px; display: block;">
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <h1 class="header-title" style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold; color: #ffffff;">🎉 Welcome to LC INTERVIEW BUDDY!</h1>
+                                        <p class="header-subtitle" style="margin: 0; font-size: 16px; color: #ffffff;">Your coding journey just got supercharged!</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content Section -->
+                    <tr>
+                        <td class="content-section" style="padding: 30px 20px; background-color: #ffffff;">
+                            <h2 class="greeting" style="font-size: 18px; margin: 0 0 20px 0; color: #2d3748; font-weight: bold;">Hi <%= name %>,</h2>
+                            
+                            <p class="main-text" style="font-size: 15px; color: #4a5568; margin: 0 0 20px 0; line-height: 1.6;">Congratulations! Your payment has been processed successfully and you now have <span class="highlight" style="color: #4A90E2; font-weight: bold;">lifetime access</span> to all LC Interview Buddy premium features. Get ready to accelerate your interview preparation!</p>
+                            
+                            <!-- Payment Details -->
+                            <table class="payment-details-box" width="100%" cellpadding="20" cellspacing="0" border="0" style="background-color: #f8fafc; border-left: 6px solid #4A90E2; border-radius: 12px; margin: 20px 0;">
+                                <tr>
+                                    <td>
+                                        <h3 class="section-title" style="margin: 0 0 15px 0; color: #2d3748; font-size: 16px; font-weight: bold;">📋 Payment Confirmation</h3>
+                                        <table class="payment-info-table" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr class="payment-info-row">
+                                                <td class="payment-info-label" style="padding: 8px 10px 8px 0; color: #4a5568; font-weight: bold; font-size: 14px;">Plan:</td>
+                                                <td class="payment-info-value" style="padding: 8px 0; color: #4A90E2; font-weight: bold; font-size: 14px; text-align: right;"><%= plan %></td>
+                                            </tr>
+                                            <tr class="payment-info-row">
+                                                <td class="payment-info-label" style="padding: 8px 10px 8px 0; color: #4a5568; font-weight: bold; font-size: 14px;">Amount:</td>
+                                                <td class="payment-info-value" style="padding: 8px 0; color: #4A90E2; font-weight: bold; font-size: 14px; text-align: right;"><%= currency ? currency.toUpperCase() : 'USD' %> <%= paymentAmount || 'N/A' %></td>
+                                            </tr>
+                                            <tr class="payment-info-row">
+                                                <td class="payment-info-label" style="padding: 8px 10px 8px 0; color: #4a5568; font-weight: bold; font-size: 14px;">Payment ID:</td>
+                                                <td class="payment-info-value" style="padding: 8px 0; color: #4A90E2; font-weight: bold; font-size: 14px; text-align: right; word-break: break-word;"><%= paymentId %></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="payment-info-label" style="padding: 8px 10px 8px 0; color: #4a5568; font-weight: bold; font-size: 14px;">Date:</td>
+                                                <td class="payment-info-value" style="padding: 8px 0; color: #4A90E2; font-weight: bold; font-size: 14px; text-align: right;"><%= paymentDate %></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Features Section -->
+                            <table class="features-box" width="100%" cellpadding="20" cellspacing="0" border="0" style="background-color: #edf2f7; border-radius: 16px; margin: 20px 0;">
+                                <tr>
+                                    <td>
+                                        <h3 class="features-title" style="margin: 0 0 15px 0; color: #2d3748; font-size: 18px; font-weight: bold; text-align: center;">🚀 Your Premium Benefits</h3>
+                                        
+                                        <table class="feature-item" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; margin-bottom: 10px; border-radius: 12px; border-left: 4px solid #4A90E2;">
+                                            <tr>
+                                                <td class="feature-icon-cell" style="width: 40px; padding: 12px 8px 12px 15px; vertical-align: middle; font-size: 16px;">✨</td>
+                                                <td class="feature-text-cell" style="padding: 12px 15px 12px 8px; color: #4a5568; font-size: 14px; vertical-align: middle;">Access to all premium coding problems</td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <table class="feature-item" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; margin-bottom: 10px; border-radius: 12px; border-left: 4px solid #4A90E2;">
+                                            <tr>
+                                                <td class="feature-icon-cell" style="width: 40px; padding: 12px 8px 12px 15px; vertical-align: middle; font-size: 16px;">🧠</td>
+                                                <td class="feature-text-cell" style="padding: 12px 15px 12px 8px; color: #4a5568; font-size: 14px; vertical-align: middle;">Detailed solution explanations</td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <table class="feature-item" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; margin-bottom: 10px; border-radius: 12px; border-left: 4px solid #4A90E2;">
+                                            <tr>
+                                                <td class="feature-icon-cell" style="width: 40px; padding: 12px 8px 12px 15px; vertical-align: middle; font-size: 16px;">📊</td>
+                                                <td class="feature-text-cell" style="padding: 12px 15px 12px 8px; color: #4a5568; font-size: 14px; vertical-align: middle;">Advanced analytics & progress tracking</td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <table class="feature-item" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; margin-bottom: 10px; border-radius: 12px; border-left: 4px solid #4A90E2;">
+                                            <tr>
+                                                <td class="feature-icon-cell" style="width: 40px; padding: 12px 8px 12px 15px; vertical-align: middle; font-size: 16px;">📚</td>
+                                                <td class="feature-text-cell" style="padding: 12px 15px 12px 8px; color: #4a5568; font-size: 14px; vertical-align: middle;">Interview preparation guides</td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <table class="feature-item" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; margin-bottom: 10px; border-radius: 12px; border-left: 4px solid #4A90E2;">
+                                            <tr>
+                                                <td class="feature-icon-cell" style="width: 40px; padding: 12px 8px 12px 15px; vertical-align: middle; font-size: 16px;">⚡</td>
+                                                <td class="feature-text-cell" style="padding: 12px 15px 12px 8px; color: #4a5568; font-size: 14px; vertical-align: middle;">Priority customer support</td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <table class="feature-item" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; margin-bottom: 10px; border-radius: 12px; border-left: 4px solid #4A90E2;">
+                                            <tr>
+                                                <td class="feature-icon-cell" style="width: 40px; padding: 12px 8px 12px 15px; vertical-align: middle; font-size: 16px;">🎯</td>
+                                                <td class="feature-text-cell" style="padding: 12px 15px 12px 8px; color: #4a5568; font-size: 14px; vertical-align: middle;">Ad-free, distraction-free experience</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- CTA Button -->
+                            <table class="cta-section" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 25px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="https://lc-interview-buddy.vercel.app/" class="cta-button" style="display: inline-block; background-color: #4A90E2; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; margin: 10px;">
+                                            Start Using Premium Features 🚀
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Pro Tip -->
+                            <table class="pro-tip-box" width="100%" cellpadding="15" cellspacing="0" border="0" style="background-color: #fff5f5; border-left: 6px solid #f56565; border-radius: 12px; margin: 20px 0;">
+                                <tr>
+                                    <td>
+                                        <p style="margin: 0; font-size: 14px; color: #4a5568;"><strong>🔥 Pro Tip:</strong> Head over to your dashboard to explore all the premium features and start your enhanced coding practice! Your first step should be checking out our exclusive interview preparation roadmap.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p class="main-text" style="font-size: 15px; color: #4a5568; margin: 0 0 20px 0; line-height: 1.6;">We've designed every feature with your success in mind. Whether you're preparing for FAANG interviews or looking to sharpen your coding skills, you now have everything you need to succeed.</p>
+                            
+                            <!-- Support Box -->
+                            <table class="support-box" width="100%" cellpadding="20" cellspacing="0" border="0" style="background-color: #e6fffa; border-radius: 16px; margin: 20px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <h4 class="support-title" style="margin: 0 0 10px 0; color: #2d3748; font-size: 16px; font-weight: bold;">Need Help Getting Started? 🤝</h4>
+                                        <p class="support-text" style="margin: 0 0 10px 0; font-size: 14px; color: #4a5568;">Our support team is here to help you make the most of your premium experience.</p>
+                                        <p style="margin: 0; font-size: 14px; color: #4a5568;">Email us at <a href="mailto:lcinterviewbuddy@gmail.com" class="support-email" style="color: #4A90E2; text-decoration: none; font-weight: bold;">lcinterviewbuddy@gmail.com</a></p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p class="main-text" style="font-size: 15px; color: #4a5568; margin: 0 0 20px 0; line-height: 1.6;">Thank you for choosing LC Interview Buddy Premium. We're thrilled to be part of your coding journey and can't wait to see you achieve your goals!</p>
+                            
+                            <p class="signature" style="font-size: 16px; margin: 25px 0 0 0; color: #4a5568;">Happy Coding! 💻<br>
+                            <strong class="signature-name" style="color: #4A90E2; font-weight: bold;">The LC Interview Buddy Team</strong></p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer Section -->
+                    <tr>
+                        <td class="footer-section" style="background-color: #1a202c; color: #a0aec0; padding: 20px; text-align: center; font-size: 12px; border-radius: 0 0 16px 16px;">
+                            <p class="footer-text" style="margin: 5px 0; color: #a0aec0;">&copy; 2025 LC Interview Buddy. All rights reserved.</p>
+                            <p class="footer-text" style="margin: 5px 0; color: #a0aec0;">Made with <span class="footer-heart" style="color: #f56565;">❤️</span> for developers worldwide</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
