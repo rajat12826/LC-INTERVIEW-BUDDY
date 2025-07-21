@@ -13,17 +13,16 @@ export default clerkMiddleware(async (auth, req) => {
   // Get the current authentication state from Clerk
   const { userId } = await auth();
   
-  // Protect the route only if it matches the protected pattern
+  
   if (isProtectedRoute(req)) {
-    // If user is not authenticated, redirect to sign-in
+  
     if (!userId) {
       const authResult = await auth();
       return authResult.redirectToSignIn();
     }
     
-    // If user is authenticated, check their premium status in Supabase
     try {
-      // Fetch user's premium status from lc_users table using their Clerk user ID
+     
       const { data: userRecord, error } = await supabaseAdmin
         .from('lc_users')
         .select('is_premium')
