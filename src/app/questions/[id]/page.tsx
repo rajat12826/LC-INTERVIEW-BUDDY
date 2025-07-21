@@ -431,7 +431,7 @@ What would you like to explore first?`,
                           <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         </div>
                       </div>
-                      <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                      <div className="   dark:from-gray-800 dark:to-gray-750 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center space-x-2">
                           <div className="flex space-x-1">
                             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
