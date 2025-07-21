@@ -6,11 +6,11 @@ import { supabaseAdmin } from './lib/server';
 // Define protected routes
 const isProtectedRoute = createRouteMatcher(["/questions(.*)"]);
 
-// Initialize Supabase Admin client for use in middleware
+
 
 
 export default clerkMiddleware(async (auth, req) => {
-  // Get the current authentication state from Clerk
+  
   const { userId } = await auth();
   
   
