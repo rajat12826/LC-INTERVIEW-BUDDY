@@ -29,7 +29,7 @@ export default function Home() {
     if (isSignedIn && user) {
       const userEmail = user.emailAddresses[0]?.emailAddress;
       const clerkUserId = user.id;
-      const userName = user.fullName || user.username || 'Unknown User'; // Get user's full name or a fallback
+      const userName = user.fullName || user.username || 'Unknown User'; 
 
       if (!userEmail || !clerkUserId) {
         console.error("Clerk user email or ID not found. Cannot proceed with Supabase check.");
