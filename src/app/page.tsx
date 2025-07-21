@@ -45,7 +45,7 @@ export default function Home() {
           .eq('clerk_user_id', clerkUserId) // Query by clerk_user_id
           .single();
 
-        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means "no rows found"
+        if (fetchError && fetchError.code !== 'PGRST116') { 
           console.error("Error fetching user from Supabase:", fetchError);
         
           setIsProcessingClick(false); // Stop processing
