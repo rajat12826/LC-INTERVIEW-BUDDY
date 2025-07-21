@@ -38,7 +38,7 @@ export default function Home() {
       }
 
       try {
-        // 1. Check if user exists in Supabase's 'lc_users' table using clerk_user_id
+     
         const { data: existingUser, error: fetchError } = await supabase
           .from('lc_users') // Changed table name to lc_users
           .select('is_premium')
