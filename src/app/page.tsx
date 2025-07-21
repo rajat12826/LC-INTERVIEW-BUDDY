@@ -3,10 +3,10 @@
 import { Code, Trophy, Users, ArrowRight } from 'lucide-react'
 import Navbar from './_components/layout/Navbar'
 import { useUser } from '@clerk/nextjs'; 
-import { useRouter, useSearchParams } from 'next/navigation'; 
-import { useEffect, useState } from 'react'; 
+import { useRouter} from 'next/navigation'; 
+import { useState } from 'react'; 
 import { supabase } from '@/lib/supabase'; 
-import { toast } from 'sonner';
+
 
 
 
@@ -14,51 +14,9 @@ export default function Home() {
   const { isSignedIn, user, isLoaded } = useUser(); 
   const router = useRouter();
   const [isProcessingClick, setIsProcessingClick] = useState(false); 
-  const searchParams = useSearchParams(); 
+
   
-  useEffect(() => {
-    // Add debug logging
-    console.log('useEffect triggered - checking for payment params');
-    console.log('Current URL:', window.location.href);
-    console.log('All search params:', Object.fromEntries(searchParams.entries()));
-    
-    const paymentId = searchParams.get('payment_id');
-    const status = searchParams.get('status');
-    
-    console.log('Payment ID:', paymentId);
-    console.log('Status:', status);
-    console.log('Status exact match check:', status === 'succeeded');
-    console.log('Status type:', typeof status);
-
-    if (paymentId && status === 'succeeded') {
-      console.log('✅ Payment success conditions met - showing toast');
-      
-      // Show toast with explicit configuration
-      toast.success('🎉 Payment successful! You now have premium access.', {
-        duration: 5000,
-        // position: 'top-center',
-      });
-      
-     
-
-      // Clean up the URL after a longer delay to ensure toast shows
-      setTimeout(() => {
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete('payment_id');
-        newUrl.searchParams.delete('status');
-        
-        console.log('🧹 Cleaning URL - before:', window.location.href);
-        console.log('🧹 Cleaning URL - after:', newUrl.pathname + newUrl.search);
-        
-        router.replace(newUrl.pathname + newUrl.search);
-      }, 2000); // Increased delay to 2 seconds
-      
-    } else {
-      console.log('❌ Payment success conditions NOT met');
-      if (!paymentId) console.log('- Missing payment_id parameter');
-      if (status !== 'succeeded') console.log('- Status is not "succeeded", got:', status, 'type:', typeof status);
-    }
-  }, [searchParams, router]);
+ 
 
   const handleStartPracticingClick = async () => {
    
