@@ -33,8 +33,7 @@ export default function Home() {
 
       if (!userEmail || !clerkUserId) {
         console.error("Clerk user email or ID not found. Cannot proceed with Supabase check.");
-        setIsProcessingClick(false); // Stop processing
-        // Optionally, show an error message to the user
+        setIsProcessingClick(false); 
         return;
       }
 
