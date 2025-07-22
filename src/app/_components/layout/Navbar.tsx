@@ -22,15 +22,13 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white/80   dark:bg-gray-900 shadow-sm backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo Section */}
+       
           <div className="flex items-center flex-shrink-0">
             <Link 
               href="/" 
               className="flex items-center space-x-3 group transition-all duration-200 hover:scale-105"
             >
-              {/* <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-200">
-                <Code className="h-5 w-5 text-white" />
-              </div> */}
+           
               <img src="https://res.cloudinary.com/metube128/image/upload/v1753111031/logo-1_zu7bua.png" className='w-10 h-10 rounded-full'/>
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
