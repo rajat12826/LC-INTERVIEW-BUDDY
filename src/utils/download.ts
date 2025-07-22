@@ -23,7 +23,7 @@ const model = genAI.getGenerativeModel({
 
 // Define the generation configuration
 const generationConfig = {
-  temperature: 0.7,
+  temperature: 0.1, // Lower temperature for more consistent JSON output
   topP: 0.95,
   topK: 40,
   maxOutputTokens: 8192,
@@ -43,38 +43,80 @@ async function fetchDailyQuestion(): Promise<any | null> {
     }
 }
 
-async function transformQuestionDataWithAI(rawData: any): Promise<any | null> {
-    const prompt = `Given the following raw LeetCode daily question data in JSON format, transform it into a new JSON object with the following keys and values. If a value is not directly available, infer it reasonably or use "N/A" for strings, 0 for numbers, and empty string for arrays. For "Topics", if not present, provide a reasonable guess based on the question title/content.
-
-    Input JSON:
-    ${JSON.stringify(rawData, null, 2)}
-
-    Output JSON Format:
-    {
-        "Difficulty": "HARD" | "MEDIUM" | "EASY",
-        "Question": "Zuma Game",
-        "Frequency (Number of Companies)": 0,
-        "Link of Question": "https://leetcode.com/problems/zuma-game",
-        "Companies Asking This Question": "Company A, Company B",
-        "Topics": "String, Dynamic Programming, Stack, Breadth-First Search, Memoization"
+function extractJsonFromResponse(text: string): string {
+    // Remove markdown code blocks if present
+    let cleanText = text.trim();
+    
+    // Remove ```json and ``` markers
+    if (cleanText.startsWith('```json')) {
+        cleanText = cleanText.replace(/^```json\s*/, '');
     }
+    if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```\s*/, '');
+    }
+    if (cleanText.endsWith('```')) {
+        cleanText = cleanText.replace(/\s*```$/, '');
+    }
+    
+    // Find JSON object boundaries
+    const jsonStart = cleanText.indexOf('{');
+    const jsonEnd = cleanText.lastIndexOf('}');
+    
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        return cleanText.slice(jsonStart, jsonEnd + 1);
+    }
+    
+    return cleanText;
+}
 
-    Ensure "Difficulty" is uppercase. For "Companies Asking This Question", if no specific companies are mentioned, use "N/A". Make sure the output is *only* the JSON object, without any additional text or markdown.`;
+async function transformQuestionDataWithAI(rawData: any): Promise<any | null> {
+    const prompt = `Transform the following LeetCode daily question data into the exact JSON format specified below. Return ONLY the JSON object, no markdown, no explanations, no additional text.
+
+Input data:
+${JSON.stringify(rawData, null, 2)}
+
+Required output format (return ONLY this JSON structure):
+{
+    "Difficulty": "HARD" | "MEDIUM" | "EASY",
+    "Question": "Question Title Here",
+    "Frequency (Number of Companies)": 0,
+    "Link of Question": "https://leetcode.com/problems/question-slug",
+    "Companies Asking This Question": "N/A",
+    "Topics": "Topic1, Topic2, Topic3"
+}
+
+Rules:
+- Difficulty must be UPPERCASE (EASY/MEDIUM/HARD)
+- If companies not available, use "N/A"
+- If topics not available, infer from question title/content
+- Return ONLY the JSON object, no other text`;
 
     try {
+        console.log("Sending request to Gemini AI...");
+        
         // Use model.generateContent and pass the generationConfig directly
         const result = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig, // Pass the configuration here
+            generationConfig,
         });
+        
         const response = await result.response;
         const text = response.text();
-
+        
+        console.log("Raw AI response:", text);
+        
+        // Extract JSON from the response
+        const jsonText = extractJsonFromResponse(text);
+        console.log("Extracted JSON text:", jsonText);
+        
         // Attempt to parse the text as JSON
-        const transformedJson = JSON.parse(text);
+        const transformedJson = JSON.parse(jsonText);
+        console.log("Successfully parsed JSON:", transformedJson);
+        
         return transformedJson;
     } catch (error) {
         console.error(`Error transforming data with AI: ${error}`);
+        console.error(`Raw response that failed to parse:`, error);
         return null;
     }
 }
