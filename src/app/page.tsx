@@ -56,7 +56,7 @@ export default function Home() {
         if (existingUser) {
           // User exists, check premium status
           if (existingUser.is_premium) {
-            router.push('/questions'); // Redirect to questions if premium
+            router.push('/leetcode'); // Redirect to questions if premium
           } else {
             router.push('/subscription'); // Redirect to subscription if not premium
           }

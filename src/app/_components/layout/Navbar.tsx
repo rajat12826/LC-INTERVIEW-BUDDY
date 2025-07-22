@@ -29,8 +29,8 @@ export default function Navbar() {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-             <Link href="/questions/daily">
-        Daily Question 
+             <Link href="/leetcode/profile" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+        Profile
       </Link>
             <UserButton />
             <ToggleButton />
@@ -64,7 +64,8 @@ export default function Navbar() {
               <div className="flex items-center justify-between py-3">
                 <div className="flex items-center space-x-3">
                   <UserButton />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Account</span>
+                 <Link href={"/leetcode/profile"} >
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Profile</span></Link>
                 </div>
               
               </div>

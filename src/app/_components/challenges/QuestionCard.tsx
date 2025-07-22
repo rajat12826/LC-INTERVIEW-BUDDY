@@ -54,7 +54,7 @@ const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
     setCurrentQuestion(question)
     
     // Navigate to the AI tutor page
-    router.push(`/questions/${questionId}`)
+    router.push(`/leetcode/${questionId}`)
   }
 
   return (

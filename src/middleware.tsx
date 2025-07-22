@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from './lib/server';
 
 
-const isProtectedRoute = createRouteMatcher(["/questions(.*)"]);
+const isProtectedRoute = createRouteMatcher(["/leetcode(.*)"]);
 
 
 

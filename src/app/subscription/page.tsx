@@ -150,7 +150,7 @@ export default function SubscriptionPage() {
       if (isPremium) {
         setMessage('Payment confirmed! Redirecting to questions...');
         setTimeout(() => {
-          router.push('/questions');
+          router.push('/leetcode');
         }, 2000);
       } else {
         setMessage('No premium subscription found. Please complete your payment or contact support if you recently paid.');
