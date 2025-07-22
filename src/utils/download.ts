@@ -1,7 +1,7 @@
 // src/utils/download.ts
 import fs from 'fs';
 import path from 'path';
-import { GoogleGenerativeAI } from '@google/generative-ai'; // Assuming you install this package
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Define the API endpoint for the daily question
 const DAILY_QUESTION_API_URL = "https://leetcode-api-pied.vercel.app/daily";
@@ -14,8 +14,21 @@ const API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY; // Get from environmen
 if (!API_KEY) {
     throw new Error("GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set.");
 }
+
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-flash" }); // Use gemini-flash
+
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash",
+});
+
+// Define the generation configuration
+const generationConfig = {
+  temperature: 0.7,
+  topP: 0.95,
+  topK: 40,
+  maxOutputTokens: 8192,
+  responseMimeType: "text/plain",
+};
 
 async function fetchDailyQuestion(): Promise<any | null> {
     try {
@@ -49,7 +62,11 @@ async function transformQuestionDataWithAI(rawData: any): Promise<any | null> {
     Ensure "Difficulty" is uppercase. For "Companies Asking This Question", if no specific companies are mentioned, use "N/A". Make sure the output is *only* the JSON object, without any additional text or markdown.`;
 
     try {
-        const result = await model.generateContent(prompt);
+        // Use model.generateContent and pass the generationConfig directly
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig, // Pass the configuration here
+        });
         const response = await result.response;
         const text = response.text();
 
@@ -75,33 +92,29 @@ async function updateQuestionsJson(transformedQuestion: any) {
     }
 
     // Add fetchedDate for tracking.
-    // Use the date from the API response if available, otherwise current date.
     const fetchedDate = transformedQuestion.fetchedDate || new Date().toISOString().split('T')[0];
     transformedQuestion.fetchedDate = fetchedDate;
     transformedQuestion.isDaily = true;
 
-    // Check if a question for today already exists based on 'Link of Question' and 'fetchedDate'
-    let foundExisting = false;
-    for (let i = 0; i < questions.length; i++) {
-        if (questions[i]['Link of Question'] === transformedQuestion['Link of Question'] &&
-            questions[i].fetchedDate === transformedQuestion.fetchedDate) {
-            questions[i] = transformedQuestion; // Update existing entry
-            foundExisting = true;
-            console.log(`Updated existing daily question for ${transformedQuestion.fetchedDate}: ${transformedQuestion.Question}`);
-            break;
-        }
+    // Check only by 'Link of Question'
+    const isQuestionAlreadyPresent = questions.some(q =>
+        q['Link of Question'] === transformedQuestion['Link of Question']
+    );
+
+    if (isQuestionAlreadyPresent) {
+        console.log(`Question with link ${transformedQuestion['Link of Question']} (${transformedQuestion.Question}) is already present. Skipping add.`);
+        return; // Exit the function if already present
     }
 
-    if (!foundExisting) {
-        questions.unshift(transformedQuestion); // Add new daily question to the beginning
-        console.log(`Added new daily question for ${transformedQuestion.fetchedDate}: ${transformedQuestion.Question}`);
-    }
+    // If not found, add the new daily question to the beginning
+    questions.unshift(transformedQuestion);
+    console.log(`Added new question: ${transformedQuestion.Question} (Link: ${transformedQuestion['Link of Question']})`);
 
     // Ensure the directory exists
     fs.mkdirSync(path.dirname(JSON_FILE_PATH), { recursive: true });
 
     fs.writeFileSync(JSON_FILE_PATH, JSON.stringify(questions, null, 2));
-    console.log(`Updated ${JSON_FILE_PATH} with daily question data.`);
+    console.log(`Updated ${JSON_FILE_PATH} with new question data.`);
 }
 
 async function main() {
@@ -109,7 +122,6 @@ async function main() {
     const dailyApiResponse = await fetchDailyQuestion();
 
     if (dailyApiResponse) {
-        // Pass the entire API response to the AI for transformation
         const transformedData = await transformQuestionDataWithAI(dailyApiResponse);
         if (transformedData) {
             await updateQuestionsJson(transformedData);
