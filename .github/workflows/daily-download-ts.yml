@@ -1,0 +1,45 @@
+# .github/workflows/daily-download-ts.yml
+
+name: Daily Download (TypeScript)
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight UTC
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  update-daily-question:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18' # Use a recent Node.js version
+
+      - name: Install dependencies
+        run: npm install # Assumes package.json has your dependencies including @google/generative-ai
+
+      - name: Run download.ts to get daily question
+        env:
+          # Securely pass your Google Generative AI API Key
+          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+        # Execute the TypeScript file using ts-node or by first building it
+        # If you're running it directly with Node.js after a TypeScript build:
+        # run: node dist/src/utils/download.js # Assuming you compile TS to JS
+        # If using ts-node for direct execution (requires ts-node installed):
+        run: npx ts-node src/utils/download.ts # This is simpler for workflows
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/lib/questions.json # Ensure this path is correct
+          if git diff-index --quiet HEAD; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: Update daily LeetCode question via TS and AI"
+            git push
+          fi
