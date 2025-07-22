@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react'
 import Link from 'next/link'
-import { Code, Menu, X } from 'lucide-react'
+import { Code, Menu, X, Zap, Calendar, User, Shuffle } from 'lucide-react'
 import ToggleButton from '../Toggle'
 import { UserButton } from '@clerk/nextjs'
 
@@ -12,66 +12,139 @@ export default function Navbar() {
     setIsMobileMenuOpen(!isMobileMenuOpen)
   }
 
+  const navigationItems = [
+    { href: "/leetcode/random", label: "Random", icon: Shuffle },
+    { href: "/leetcode/daily", label: "Daily", icon: Calendar },
+    { href: "/leetcode/profile", label: "Profile", icon: User },
+  ]
+
   return (
-    <nav className="bg-white dark:bg-gray-900 shadow-sm border-b">
+    <nav className="sticky top-0 z-50 bg-white/80   dark:bg-gray-900 shadow-sm backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo Section */}
           <div className="flex items-center flex-shrink-0">
-            <Link href="/" className="flex items-center space-x-2">
-              <Code className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-              <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">
-                <span className="hidden sm:inline">LeetCode Interview Prep</span>
-                <span className="sm:hidden">LeetCode Prep</span>
-              </span>
+            <Link 
+              href="/" 
+              className="flex items-center space-x-3 group transition-all duration-200 hover:scale-105"
+            >
+              {/* <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-200">
+                <Code className="h-5 w-5 text-white" />
+              </div> */}
+              <img src="https://res.cloudinary.com/metube128/image/upload/v1753111031/logo-1_zu7bua.png" className='w-10 h-10 rounded-full'/>
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                  <span className="hidden sm:inline">LeetCode Prep</span>
+                  <span className="sm:hidden">LC Prep</span>
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+                  Interview Ready
+                </span>
+              </div>
             </Link>
           </div>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
-             <Link href="/leetcode/profile" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
-        Profile
-      </Link>
-            <UserButton />
-            <ToggleButton />
+          <div className="hidden md:flex items-center space-x-1">
+            {navigationItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100/70 dark:hover:bg-gray-800/70 transition-all duration-200 relative group"
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                  <div className="absolute inset-x-0 -bottom-1 h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 rounded-full" />
+                </Link>
+              )
+            })}
+            
+            {/* Divider */}
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-2" />
+            
+            {/* User Controls */}
+            <div className="flex items-center space-x-3">
+              <div className="p-1">
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8 ring-2 ring-gray-200 dark:ring-gray-700 hover:ring-blue-500 transition-all duration-200"
+                    }
+                  }}
+                />
+              </div>
+              <ToggleButton />
+            </div>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-6">
+          {/* Mobile Controls */}
+          <div className="md:hidden flex items-center space-x-3">
             <ToggleButton />
             <button
               onClick={toggleMobileMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-              aria-expanded="false"
+              className="inline-flex items-center justify-center p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+              aria-expanded={isMobileMenuOpen}
+              aria-label="Toggle main menu"
             >
-              <span className="sr-only">Open main menu</span>
               {isMobileMenuOpen ? (
-                <X className="block h-6 w-6" aria-hidden="true" />
+                <X className="block h-6 w-6 rotate-90 transition-transform duration-200" />
               ) : (
-               
-                 
-                 <Menu className="block h-6 w-6" aria-hidden="true" />
-             
+                <Menu className="block h-6 w-6 transition-transform duration-200" />
               )}
             </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between py-3">
-                <div className="flex items-center space-x-3">
-                  <UserButton />
-                 <Link href={"/leetcode/profile"} >
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Profile</span></Link>
-                </div>
-              
+        <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+          isMobileMenuOpen 
+            ? 'max-h-96 opacity-100' 
+            : 'max-h-0 opacity-0'
+        }`}>
+          <div className="px-2 pt-4 pb-6 space-y-2 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-b-2xl mx-4 mt-2">
+            
+            {/* User Section */}
+            <div className="flex items-center space-x-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: "w-10 h-10 ring-2 ring-gray-200 dark:ring-gray-600"
+                  }
+                }}
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Your Account
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Manage your progress
+                </span>
               </div>
             </div>
+
+            {/* Navigation Links */}
+            <div className="space-y-1">
+              {navigationItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 group border border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-sm"
+                  >
+                    <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors duration-200">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </nav>
   )
