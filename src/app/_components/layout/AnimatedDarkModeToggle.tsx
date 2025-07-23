@@ -50,7 +50,7 @@ const ToggleButton: React.FC<AnimatedDarkModeToggleProps> = ({
         relative inline-flex items-center justify-center
         p-2 rounded-full  
         hover:bg-gray-100 dark:hover:bg-gray-800
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+        focus:outline-none focus:ring-2 
         active:scale-95 group
         ${className}
       `}
