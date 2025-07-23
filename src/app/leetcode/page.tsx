@@ -1,51 +1,94 @@
 'use client'
 
+import { useMemo, useState, useCallback } from 'react'
 import { useChallengeFilterStore } from '@/utils/stores/useChallengeFilterStore'
 import ChallengeFilters from '../_components/challenges/ChallengeFilter'
 import QuestionCard from '../_components/challenges/QuestionCard'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
+import { Question } from '@/utils/types'// ⬅️ Import the Question interface for clarity
+
+// Virtual scrolling hook
+function useVirtualScrolling(items: Question[], itemsPerPage = 20) { // ⬅️ Type 'items'
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const paginatedItems = useMemo(() => {
+    const startIndex = 0
+    const endIndex = currentPage * itemsPerPage
+    return items.slice(startIndex, endIndex)
+  }, [items, currentPage, itemsPerPage])
+
+  const hasMore = currentPage * itemsPerPage < items.length
+
+  const loadMore = useCallback(() => {
+    if (hasMore) {
+      setCurrentPage(prev => prev + 1)
+    }
+  }, [hasMore])
+
+  const reset = useCallback(() => {
+    setCurrentPage(1)
+  }, [])
+
+  return { paginatedItems, hasMore, loadMore, reset }
+}
 
 export default function ChallengesPage() {
+  // allQuestions will now be correctly typed as Question[] | null
   const allQuestions = useQuestionStore((state) => state.allQuestions)
+  const { search, difficulty, companies, topics, solved, clearAll } = useChallengeFilterStore()
+  const isSolved = useQuestionStore((state) => state.isSolved)
 
-  
-const { search, difficulty, category, companies, topics, solved, clearAll } = useChallengeFilterStore()
+  // Memoize filtered questions to avoid recalculating on every render
+  const filteredQuestions = useMemo(() => {
+    if (!allQuestions) return []
 
-const isSolved = useQuestionStore((state) => state.isSolved)
+    // 'q' will be correctly inferred as 'Question' here
+    return allQuestions.filter((q) => {
+      const matchesSearch =
+        search === '' ||
+        q.Question.toLowerCase().includes(search.toLowerCase()) ||
+        q.Topics.toLowerCase().includes(search.toLowerCase())
 
+      const matchesDifficulty =
+        difficulty === '' || q.Difficulty.toLowerCase() === difficulty.toLowerCase()
 
-  const filteredQuestions = allQuestions?.filter((q) => {
-    const matchesSearch =
-      search === '' ||
-      q.Question.toLowerCase().includes(search.toLowerCase()) ||
-      q.Topics.toLowerCase().includes(search.toLowerCase())
+      const matchesCompanies =
+        companies.length === 0 ||
+        companies.some((comp) => q['Companies Asking This Question'].includes(comp))
 
-    const matchesDifficulty =
-      difficulty === '' || q.Difficulty.toLowerCase() === difficulty.toLowerCase()
+      const matchesTopics =
+        topics.length === 0 ||
+        topics.some((topic) => q.Topics.toLowerCase().includes(topic.toLowerCase()))
 
-   
-    const matchesCompanies =
-      companies.length === 0 ||
-      companies.some((comp) => q['Companies Asking This Question'].includes(comp))
+      const matchesSolved =
+        solved === 'all' ||
+        (solved === 'solved' && isSolved(q.Question)) ||
+        (solved === 'unsolved' && !isSolved(q.Question))
 
-    const matchesTopics =
-      topics.length === 0 ||
-      topics.some((topic) => q.Topics.toLowerCase().includes(topic.toLowerCase()))
-   
-  const matchesSolved =
-    solved === 'all' ||
-    (solved === 'solved' && isSolved(q.Question)) ||
-    (solved === 'unsolved' && !isSolved(q.Question)) 
+      return (
+        matchesSearch &&
+        matchesDifficulty &&
+        matchesCompanies &&
+        matchesTopics &&
+        matchesSolved
+      )
+    })
+  }, [allQuestions, search, difficulty, companies, topics, solved, isSolved])
 
-    return (
-      matchesSearch &&
-      matchesDifficulty &&
-      // matchesCategory &&
-      matchesCompanies &&
-      matchesTopics &&
-      matchesSolved
-    )
-  })
+  // paginatedItems will be correctly typed as Question[]
+  const { paginatedItems, hasMore, loadMore, reset } = useVirtualScrolling(filteredQuestions, 24)
+
+  // Reset pagination when filters change
+  useMemo(() => {
+    reset()
+  }, [filteredQuestions.length, reset])
+
+  // Memoize stats calculations
+  const stats = useMemo(() => ({
+    easy: filteredQuestions.filter((c) => c.Difficulty === 'EASY').length,
+    medium: filteredQuestions.filter((c) => c.Difficulty === 'MEDIUM').length,
+    hard: filteredQuestions.filter((c) => c.Difficulty === 'HARD').length,
+  }), [filteredQuestions])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/20">
@@ -68,29 +111,29 @@ const isSolved = useQuestionStore((state) => state.isSolved)
             <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
               Master your coding skills with{' '}
               <span className="font-semibold text-blue-600 dark:text-blue-400">
-                {filteredQuestions?.length || 0}
+                {filteredQuestions.length}
               </span>{' '}
               carefully curated challenges from top tech companies
             </p>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards - Memoized */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto mt-8">
             <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md">
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {filteredQuestions?.filter((c) => c.Difficulty === 'EASY').length || 0}
+                {stats.easy}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Easy Problems</div>
             </div>
             <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md">
               <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                {filteredQuestions?.filter((c) => c.Difficulty === 'MEDIUM').length || 0}
+                {stats.medium}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Medium Problems</div>
             </div>
             <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md">
               <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                {filteredQuestions?.filter((c) => c.Difficulty === 'HARD').length || 0}
+                {stats.hard}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Hard Problems</div>
             </div>
@@ -104,15 +147,33 @@ const isSolved = useQuestionStore((state) => state.isSolved)
           </div>
         </div>
 
-        {/* Problems Grid */}
+        {/* Problems Grid - Only render visible items */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredQuestions?.map((question) => (
+          {paginatedItems.map((question) => (
             <QuestionCard key={question.Question} question={question} />
           ))}
         </div>
 
+        {/* Load More Button */}
+        {hasMore && (
+          <div className="text-center mt-12">
+            <button
+              onClick={loadMore}
+              className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              Load More Problems
+              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </button>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              Showing {paginatedItems.length} of {filteredQuestions.length} problems
+            </p>
+          </div>
+        )}
+
         {/* Empty State */}
-        {filteredQuestions?.length === 0 && (
+        {filteredQuestions.length === 0 && (
           <div className="text-center py-20">
             <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-12 border border-gray-200/50 dark:border-gray-700/50 shadow-lg max-w-md mx-auto">
               {/* Empty State Icon */}
