@@ -5,7 +5,9 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request, { params }: { params: { username: string } }) {
   try {
-    const { username } = params;
+    // Await the params object first, then access the username property
+    const { username } = await params;
+
     if (!username) {
       return NextResponse.json({ error: 'LeetCode username is required' }, { status: 400 });
     }

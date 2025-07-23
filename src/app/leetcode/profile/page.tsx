@@ -7,8 +7,22 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 
+import dynamic from 'next/dynamic';
+const DynamicDifficultyPieChart = dynamic(() => import('@/app/_components/charts/DifficultyPieChart'), {
+  ssr: false, // Recharts requires browser APIs, so disable SSR
+  loading: () => <Skeleton className="w-full h-64 rounded-lg" />, // Placeholder while loading
+});
+
+const DynamicSubmissionBarChart = dynamic(() => import('@/app/_components/charts/SubmissionBarChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="w-full h-64 rounded-lg" />,
+});
+
+const DynamicSubmissionLineChart = dynamic(() => import('@/app/_components/charts/SubmissionLineChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="w-full h-64 rounded-lg" />,
+});
 // Shadcn UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -235,18 +249,19 @@ export default function ProfilePage() {
   }));
 
   const submissionTrendMap = new Map<string, { date: string; total: number; accepted: number }>();
-
-  leetcodeSubmissions.forEach(submission => {
-    const date = new Date(parseInt(submission.timestamp) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    if (!submissionTrendMap.has(date)) {
-      submissionTrendMap.set(date, { date, total: 0, accepted: 0 });
-    }
-    const entry = submissionTrendMap.get(date)!;
-    entry.total += 1;
-    if (submission.statusDisplay === 'Accepted') {
-      entry.accepted += 1;
-    }
-  });
+if (Array.isArray(leetcodeSubmissions)) {
+    leetcodeSubmissions.forEach(submission => {
+      const date = new Date(parseInt(submission.timestamp) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (!submissionTrendMap.has(date)) {
+        submissionTrendMap.set(date, { date, total: 0, accepted: 0 });
+      }
+      const entry = submissionTrendMap.get(date)!;
+      entry.total += 1;
+      if (submission.statusDisplay === 'Accepted') {
+        entry.accepted += 1;
+      }
+    });
+  }
 
   const submissionTrendData = Array.from(submissionTrendMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -507,8 +522,8 @@ export default function ProfilePage() {
                   </TabsList>
                   <TabsContent value="charts" className="space-y-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {/* Difficulty Distribution Pie Chart */}
-                      <Card className={`rounded-2xl shadow-xl border p-6 backdrop-blur-sm ${themeClasses.bg} transition-colors duration-300`}>
+                      
+                   <Card className={`rounded-2xl shadow-xl border p-6 backdrop-blur-sm ${themeClasses.bg} transition-colors duration-300`}>
                         <CardHeader className="p-0 mb-4">
                           <CardTitle className={`text-xl font-semibold ${themeClasses.text} flex items-center`}>
                             <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-green-500 to-blue-600 flex items-center justify-center mr-3">
@@ -520,25 +535,11 @@ export default function ProfilePage() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="h-64 p-0">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={pieChartData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={({ name, value }) => `${name}: ${value}`}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
-                              >
-                                {pieChartData?.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip contentStyle={{ backgroundColor: chartTooltipBg, borderColor: chartGridColor, color: chartTooltipText }} itemStyle={{ color: chartTooltipText }} />
-                            </PieChart>
-                          </ResponsiveContainer>
+                          {pieChartData && pieChartData.length > 0 ? (
+                            <DynamicDifficultyPieChart data={pieChartData} darkMode={darkMode} />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No data for Pie Chart</div>
+                          )}
                         </CardContent>
                       </Card>
 
@@ -555,16 +556,11 @@ export default function ProfilePage() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="h-64 p-0">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={difficultyData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                              <XAxis dataKey="name" stroke={chartAxisColor} tick={{ fill: chartAxisColor }} />
-                              <YAxis stroke={chartAxisColor} tick={{ fill: chartAxisColor }} />
-                              <Tooltip contentStyle={{ backgroundColor: chartTooltipBg, borderColor: chartGridColor, color: chartTooltipText }} itemStyle={{ color: chartTooltipText }} />
-                              <Bar dataKey="solved" fill="#8884d8" name="Solved" />
-                              <Bar dataKey="total" fill="#82ca9d" name="Total Submissions" />
-                            </BarChart>
-                          </ResponsiveContainer>
+                          {difficultyData && difficultyData.length > 0 ? (
+                            <DynamicSubmissionBarChart data={difficultyData} darkMode={darkMode} />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No data for Bar Chart</div>
+                          )}
                         </CardContent>
                       </Card>
 
@@ -582,16 +578,11 @@ export default function ProfilePage() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="h-64 p-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={submissionTrendData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
-                                <XAxis dataKey="date" stroke={chartAxisColor} tick={{ fill: chartAxisColor }} />
-                                <YAxis stroke={chartAxisColor} tick={{ fill: chartAxisColor }} />
-                                <Tooltip contentStyle={{ backgroundColor: chartTooltipBg, borderColor: chartGridColor, color: chartTooltipText }} itemStyle={{ color: chartTooltipText }} />
-                                <Line type="monotone" dataKey="total" stroke="#8884d8" name="Total Submissions" activeDot={{ r: 8 }} />
-                                <Line type="monotone" dataKey="accepted" stroke="#82ca9d" name="Accepted Submissions" />
-                              </LineChart>
-                            </ResponsiveContainer>
+                            {submissionTrendData && submissionTrendData.length > 0 ? (
+                              <DynamicSubmissionLineChart data={submissionTrendData} darkMode={darkMode} />
+                            ) : (
+                              <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No data for Line Chart</div>
+                            )}
                           </CardContent>
                         </Card>
                       )}

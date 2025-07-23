@@ -2,8 +2,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Code, Menu, X, Zap, Calendar, User, Shuffle } from 'lucide-react'
-import ToggleButton from '../Toggle'
+
 import { UserButton } from '@clerk/nextjs'
+import CustomDarkModeToggle from './CustomDarkModeToggle'
+import AnimatedDarkModeToggle from './AnimatedDarkModeToggle'
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -19,7 +21,7 @@ export default function Navbar() {
   ]
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80   dark:bg-gray-900 shadow-sm backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 transition-all duration-300">
+    <nav className="sticky top-0 z-50 bg-white/80   dark:bg-gray-900 shadow-sm backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
        
@@ -50,7 +52,7 @@ export default function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100/70 dark:hover:bg-gray-800/70 transition-all duration-200 relative group"
+                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100/70 dark:hover:bg-gray-800/70  relative group"
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.label}</span>
@@ -73,13 +75,13 @@ export default function Navbar() {
                   }}
                 />
               </div>
-              <ToggleButton />
+            <AnimatedDarkModeToggle/>
             </div>
           </div>
 
           {/* Mobile Controls */}
           <div className="md:hidden flex items-center space-x-3">
-            <ToggleButton />
+             <AnimatedDarkModeToggle/>
             <button
               onClick={toggleMobileMenu}
               className="inline-flex items-center justify-center p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"

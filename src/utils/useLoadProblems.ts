@@ -1,6 +1,8 @@
+// src/utils/useLoadProblems.ts
 "use client"
 import { useEffect, useState } from 'react'
-import data from '../lib/questions.json'
+import { useQuestionStore } from '@/utils/stores/useQuestionStore' // Import your question store
+
 type Problem = {
   id: string
   title: string
@@ -12,16 +14,23 @@ type Problem = {
 }
 
 export default function useLoadProblems() {
-  const [allProblems, setAllProblems] = useState<Problem[]>([])
-  const [allCompanies, setAllCompanies] = useState<string[]>([])
-  const [allTopics, setAllTopics] = useState<string[]>([])
+  const allProblemsRaw = useQuestionStore((state) => state.allQuestions); // Get allQuestions from Zustand
+  const [allProblems, setAllProblems] = useState<Problem[]>([]);
+  const [allCompanies, setAllCompanies] = useState<string[]>([]);
+  const [allTopics, setAllTopics] = useState<string[]>([]);
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-       
-        const problems = data.map((problem: any) => ({
-          id: problem['Link of Question'] || Math.random().toString(36),
+    // Only process if allProblemsRaw is available
+    if (allProblemsRaw.length === 0) {
+        // If questions are not yet loaded into the store,
+        // you might want to show a loading state in ChallengeFilter
+        // or ensure Layout loads them first.
+        return;
+    }
+
+    try {
+        const problems = allProblemsRaw.map((problem: any) => ({
+          id: problem['Link of Question'] || Math.random().toString(36), // Use a more robust ID if available
           title: problem.Question,
           difficulty: problem.Difficulty,
           frequency: parseInt(problem['Frequency (Number of Companies)']) || 0,
@@ -36,7 +45,6 @@ export default function useLoadProblems() {
             .filter(Boolean),
         }))
 
-
         const companyFreq: Record<string, number> = {}
         const topicFreq: Record<string, number> = {}
 
@@ -49,7 +57,6 @@ export default function useLoadProblems() {
           })
         })
 
-
         setAllCompanies(
           Object.keys(companyFreq).sort((a, b) => companyFreq[b] - companyFreq[a])
         )
@@ -58,14 +65,9 @@ export default function useLoadProblems() {
         )
         setAllProblems(problems)
       } catch (error) {
-        console.error(error)
+        console.error("Error processing problems from store:", error)
       }
-    }
-
-
-    fetchData()
-  
-  }, [])
+  }, [allProblemsRaw]); // Depend on allProblemsRaw from the store
 
   return { allProblems, allCompanies, allTopics }
 }
