@@ -1,6 +1,7 @@
 "use client"
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Code, Menu, X, Zap, Calendar, User, Shuffle } from 'lucide-react'
 
 import { UserButton } from '@clerk/nextjs'
@@ -30,8 +31,18 @@ export default function Navbar() {
               href="/" 
               className="flex items-center space-x-3 group transition-all duration-200 hover:scale-105"
             >
-           
-              <img src="https://res.cloudinary.com/metube128/image/upload/v1753111031/logo-1_zu7bua.png" className='w-10 h-10 rounded-full'/>
+              {/* Optimized image with Next.js Image component */}
+              <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                <Image 
+                  src="/logo.webp"
+                  alt="LeetCode Prep Logo"
+                  width={40}
+                  height={40}
+                  priority
+                  className="rounded-full object-cover"
+                  sizes="40px"
+                />
+              </div>
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
                   <span className="hidden sm:inline">LeetCode Prep</span>

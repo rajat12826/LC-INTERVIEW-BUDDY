@@ -5,67 +5,81 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 
 const nextConfig = {
   experimental: {
-    serverActions: true,
+    // Fixed: serverActions should be an object in newer Next.js versions
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
     // Enable package imports optimization for better tree-shaking
-    optimizePackageImports: ['recharts', 'lodash'],
+    optimizePackageImports: ['recharts', 'lodash', 'lucide-react', '@clerk/nextjs'],
+    // Enable Turbopack for faster builds (optional)
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
+  
   // Combine all image configurations
   images: {
     domains: ['avatars.githubusercontent.com', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
-  },
-  
-  webpack: (config: any, { isServer }: { isServer: boolean }) => {
-    if (!isServer) {
-      // Optimize Recharts by using ES6 modules for better tree-shaking
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'recharts': 'recharts/es6',
-      };
-
-      // Split chunks more efficiently
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          ...config.optimization.splitChunks,
-          cacheGroups: {
-            ...config.optimization.splitChunks.cacheGroups,
-            // Separate recharts into its own chunk
-            recharts: {
-              name: 'recharts',
-              test: /[\\/]node_modules[\\/]recharts[\\/]/,
-              chunks: 'all',
-              priority: 10,
-              reuseExistingChunk: true,
-            },
-            // Separate other chart libraries if you use them
-            charts: {
-              name: 'charts',
-              test: /[\\/]node_modules[\\/](d3|lodash)[\\/]/,
-              chunks: 'all',
-              priority: 5,
-              reuseExistingChunk: true,
-            },
-          },
-        },
-      };
-
-      // Enable tree shaking for recharts
-      config.module.rules.push({
-        test: /[\\/]node_modules[\\/]recharts[\\/]/,
-        sideEffects: false,
-      });
-    }
-
-    return config;
+    // Add image optimization settings
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
   // Enable compression
   compress: true,
   
-  // Enable SWC minification for better performance
-  swcMinify: true,
+  // PoweredBy header removal for security
+  poweredByHeader: false,
+  
+  
+  // Environment variables that should be available on the client
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+
+  // Headers for security and performance
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+      {
+        // Cache static assets
+        source: '/(_next/static|favicon.ico)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = withBundleAnalyzer(nextConfig);
