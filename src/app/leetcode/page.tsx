@@ -5,10 +5,15 @@ import { useChallengeFilterStore } from '@/utils/stores/useChallengeFilterStore'
 import ChallengeFilters from '../_components/challenges/ChallengeFilter'
 import QuestionCard from '../_components/challenges/QuestionCard'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
-import { Question } from '@/utils/types'// ⬅️ Import the Question interface for clarity
+import { Question } from '@/utils/types' // ⬅️ Ensure this path is correct for your Question interface
+
+// 📦 Shadcn UI Imports
+import { Button } from '@/components/ui/button' // ⬅️ Import Shadcn Button
+import { Separator } from '@/components/ui/separator' // ⬅️ Import Shadcn Separator (optional, but good for visual breaks)
+
 
 // Virtual scrolling hook
-function useVirtualScrolling(items: Question[], itemsPerPage = 20) { // ⬅️ Type 'items'
+function useVirtualScrolling(items: Question[], itemsPerPage = 20) {
   const [currentPage, setCurrentPage] = useState(1)
 
   const paginatedItems = useMemo(() => {
@@ -33,7 +38,6 @@ function useVirtualScrolling(items: Question[], itemsPerPage = 20) { // ⬅️ T
 }
 
 export default function ChallengesPage() {
-  // allQuestions will now be correctly typed as Question[] | null
   const allQuestions = useQuestionStore((state) => state.allQuestions)
   const { search, difficulty, companies, topics, solved, clearAll } = useChallengeFilterStore()
   const isSolved = useQuestionStore((state) => state.isSolved)
@@ -42,7 +46,6 @@ export default function ChallengesPage() {
   const filteredQuestions = useMemo(() => {
     if (!allQuestions) return []
 
-    // 'q' will be correctly inferred as 'Question' here
     return allQuestions.filter((q) => {
       const matchesSearch =
         search === '' ||
@@ -75,7 +78,7 @@ export default function ChallengesPage() {
     })
   }, [allQuestions, search, difficulty, companies, topics, solved, isSolved])
 
-  // paginatedItems will be correctly typed as Question[]
+  // Use virtual scrolling
   const { paginatedItems, hasMore, loadMore, reset } = useVirtualScrolling(filteredQuestions, 24)
 
   // Reset pagination when filters change
@@ -154,23 +157,37 @@ export default function ChallengesPage() {
           ))}
         </div>
 
+        {/* --- */}
+
         {/* Load More Button */}
         {hasMore && (
           <div className="text-center mt-12">
-            <button
+            <Button
               onClick={loadMore}
-              className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              // Combine Shadcn's base button styles with your custom gradient and animation
+              className="inline-flex items-center px-8 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105
+                         bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium"
+              size="lg" // Use Shadcn's large size for a prominent button
             >
               Load More Problems
               <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
-            </button>
+            </Button>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               Showing {paginatedItems.length} of {filteredQuestions.length} problems
             </p>
           </div>
         )}
+
+        {/* Optional: Add a separator above the "Load More" or "Empty State" for visual break */}
+        {(hasMore || filteredQuestions.length === 0) && (
+          <div className="mt-12">
+            <Separator />
+          </div>
+        )}
+
+        {/* --- */}
 
         {/* Empty State */}
         {filteredQuestions.length === 0 && (
@@ -202,12 +219,12 @@ export default function ChallengesPage() {
               </p>
 
               {/* Reset Button */}
-              <button
-                className="mt-6 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+              <Button // ⬅️ Using Shadcn Button for consistency
+                className="mt-6"
                 onClick={clearAll}
               >
                 Reset Filters
-              </button>
+              </Button>
             </div>
           </div>
         )}
