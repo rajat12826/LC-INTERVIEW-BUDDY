@@ -30,6 +30,7 @@ export default function Home() {
 
   const handleStartPracticingClick = useCallback(async () => {
     if (!isLoaded || isProcessingClick || !userData) {
+      router.push('/sign-in')
       return
     }
 
