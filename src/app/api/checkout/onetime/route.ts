@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       product_cart: [productWithQuantity],
       return_url: process.env.NEXT_PUBLIC_BASE_URL, // URL to redirect after payment
     });
-    console.log("Dodopayments payment link created successfully:", response);
+    // console.log("Dodopayments payment link created successfully:", response);
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error creating Dodopayments payment link:", error);

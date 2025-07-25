@@ -78,7 +78,7 @@ export default function Home() {
             return
           }
 
-          console.log(`New user ${clerkUserId} created in Supabase with ID: ${newUuid}.`)
+          // console.log(`New user ${clerkUserId} created in Supabase with ID: ${newUuid}.`)
           router.push('/subscription')
         }
       }

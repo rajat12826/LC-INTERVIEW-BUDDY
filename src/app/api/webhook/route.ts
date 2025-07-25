@@ -32,7 +32,7 @@ interface SupabaseUpdateData {
 export async function POST(request: Request) {
   const headersList = await headers();
 
-  console.log("CLERK_SECRET_KEY (for webhook debug):", process.env.CLERK_SECRET_KEY ? "SET" : "NOT SET");
+  // console.log("CLERK_SECRET_KEY (for webhook debug):", process.env.CLERK_SECRET_KEY ? "SET" : "NOT SET");
 
   try {
     const rawBody = await request.text();
@@ -42,22 +42,22 @@ export async function POST(request: Request) {
       "webhook-timestamp": headersList.get("webhook-timestamp") || "",
     };
 
-    console.log("Webhook Headers:", webhookHeaders);
-    console.log("Raw Webhook Body:", rawBody);
+    // console.log("Webhook Headers:", webhookHeaders);
+    // console.log("Raw Webhook Body:", rawBody);
 
     await webhook.verify(rawBody, webhookHeaders);
     const payload = JSON.parse(rawBody);
 
-    console.log(`Received Dodopayments webhook: Type=${payload.type}, Payload Type=${payload.data.payload_type}`);
-    console.log("Parsed Webhook Payload:", JSON.stringify(payload, null, 2));
+    // console.log(`Received Dodopayments webhook: Type=${payload.type}, Payload Type=${payload.data.payload_type}`);
+    // console.log("Parsed Webhook Payload:", JSON.stringify(payload, null, 2));
 
     // Only handle one-time payments
     if (payload.data.payload_type === "Payment" && payload.type === "payment.succeeded") {
       const paymentDataResp = await dodopayments.payments.retrieve(payload.data.payment_id);
 
-      console.log("-------PAYMENT DATA START ---------");
-      console.log(JSON.stringify(paymentDataResp, null, 2));
-      console.log("-------PAYMENT DATA END ---------");
+      // console.log("-------PAYMENT DATA START ---------");
+      // console.log(JSON.stringify(paymentDataResp, null, 2));
+      // console.log("-------PAYMENT DATA END ---------");
 
       const customerEmail = paymentDataResp.customer?.email;
       const customerName = paymentDataResp.customer?.name || customerEmail;
@@ -145,7 +145,7 @@ async function updateUserPremiumStatus(
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    console.log(`Attempting to find Clerk user for email: ${normalizedEmail}`);
+    // console.log(`Attempting to find Clerk user for email: ${normalizedEmail}`);
 
     // Find Clerk user by email
     const response = await clerkClient.users.getUserList({
@@ -164,7 +164,7 @@ async function updateUserPremiumStatus(
       throw new Error("Clerk user object is invalid.");
     }
 
-    console.log(`Found Clerk user: ${clerkUser.id}`);
+    // console.log(`Found Clerk user: ${clerkUser.id}`);
 
     // Update Clerk user public metadata
     await clerkClient.users.updateUserMetadata(clerkUser.id, {
@@ -178,7 +178,7 @@ async function updateUserPremiumStatus(
       }
     });
 
-    console.log(`Updated Clerk user ${clerkUser.id} premium status to true`);
+    // console.log(`Updated Clerk user ${clerkUser.id} premium status to true`);
 
     // Update Supabase record
     const supabaseUpdateData: SupabaseUpdateData = {
@@ -199,7 +199,7 @@ async function updateUserPremiumStatus(
       console.error("Error updating Supabase record:", updateError);
       throw updateError;
     } else {
-      console.log(`Updated Supabase record for ${normalizedEmail} (Clerk ID: ${clerkUser.id})`);
+      // console.log(`Updated Supabase record for ${normalizedEmail} (Clerk ID: ${clerkUser.id})`);
     }
 
     // Verify the update

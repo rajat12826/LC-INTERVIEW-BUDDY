@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export async function checkAndRefreshPremiumStatus(clerkUserId: string, email: string) {
   try {
-    console.log(`Checking premium status for: ${clerkUserId}, ${email}`);
+    // console.log(`Checking premium status for: ${clerkUserId}, ${email}`);
   
     let { data: user, error } = await supabase
       .from('lc_users')
@@ -42,7 +42,7 @@ export async function checkAndRefreshPremiumStatus(clerkUserId: string, email: s
       return false;
     }
 
-    console.log('Found user:', user);
+    // console.log('Found user:', user);
     return user?.is_premium || false;
   } catch (err) {
     console.error('Unexpected error checking premium status:', err);
