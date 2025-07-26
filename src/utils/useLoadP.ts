@@ -1,0 +1,73 @@
+// src/utils/useLoadPremiumProblems.ts
+"use client"
+import { useEffect, useState } from 'react'
+import { useQuestionStore } from '@/utils/stores/useQuestionStore' // Import your question store
+
+// Define the structure for a "premium problem" as it will be used in components.
+// This closely mirrors the PQuestion type, but standardizes the 'id' for consistent use.
+type PremiumProblem = {
+  id: string; // Extracted from the link for routing/identification
+  title: string;
+  link: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  description: string;
+  steps?: string[];
+  illustration?: string;
+  note?: string;
+  key_points?: string[];
+  examples: Array<{
+    input: string;
+    output: string | number;
+    explanation?: string;
+    image?: string;
+  }>;
+  constraints: string[];
+};
+
+/**
+ * A hook to load and process premium questions from the Zustand store.
+ * It transforms the raw PQuestion data into a more component-friendly format
+ * and extracts relevant metadata.
+ */
+export default function useLoadPremiumProblems() {
+  // Get the raw premium questions array and the ID extraction utility from the store
+  const premiumQuestionsRaw = useQuestionStore((state) => state.premiumQuestions);
+  const getQuestionIdFromUrl = useQuestionStore((state) => state.getQuestionIdFromUrl);
+
+  // State to hold the processed premium problems
+  const [premiumProblems, setPremiumProblems] = useState<PremiumProblem[]>([]);
+
+  // useEffect to process the raw data whenever premiumQuestionsRaw changes
+  useEffect(() => {
+    // If no raw premium questions are available, or the array is empty, do nothing.
+    if (!premiumQuestionsRaw || premiumQuestionsRaw.length === 0) {
+      setPremiumProblems([]); // Ensure state is cleared if data goes away
+      return;
+    }
+
+    try {
+      // Map the raw PQuestion data to the PremiumProblem format
+      const processedProblems: PremiumProblem[] = premiumQuestionsRaw.map((pQuestion) => ({
+        id: getQuestionIdFromUrl(pQuestion.link), // Use the store's utility to get a clean ID
+        title: pQuestion.title,
+        link: pQuestion.link,
+        difficulty: pQuestion.difficulty,
+        description: pQuestion.description,
+        steps: pQuestion.steps,
+        illustration: pQuestion.illustration,
+        note: pQuestion.note,
+        key_points: pQuestion.key_points,
+        examples: pQuestion.examples,
+        constraints: pQuestion.constraints,
+      }));
+
+      // Update the state with the processed problems
+      setPremiumProblems(processedProblems);
+    } catch (error) {
+      console.error("Error processing premium questions:", error);
+      setPremiumProblems([]); // Clear problems on error to prevent inconsistent state
+    }
+  }, [premiumQuestionsRaw, getQuestionIdFromUrl]); // Re-run effect if raw data or utility changes
+
+  return { premiumProblems }; // Return the processed list of premium problems
+}

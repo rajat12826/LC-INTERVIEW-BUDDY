@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Code, Menu, X, Zap, Calendar, User, Shuffle } from 'lucide-react'
+import { Code, Menu, X, Zap, Calendar, User, Shuffle, Star } from 'lucide-react'
 
 import { UserButton } from '@clerk/nextjs'
 import CustomDarkModeToggle from './CustomDarkModeToggle'
@@ -16,6 +16,7 @@ export default function Navbar() {
   }
 
   const navigationItems = [
+    { href: "/leetcode/premium", label: "Premium", icon: Star},
     { href: "/leetcode/random", label: "Random", icon: Shuffle },
     { href: "/leetcode/daily", label: "Daily", icon: Calendar },
     { href: "/leetcode/profile", label: "Profile", icon: User },
@@ -61,7 +62,7 @@ export default function Navbar() {
               const Icon = item.icon
               return (
                 <Link
-                  key={item.href}
+                  key={`${item.href}}desktop`}
                   href={item.href}
                   className="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100/70 dark:hover:bg-gray-800/70  relative group"
                 >

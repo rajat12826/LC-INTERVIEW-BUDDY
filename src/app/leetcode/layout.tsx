@@ -10,6 +10,7 @@ function Layout({
     children: React.ReactNode
 }) {
     const setQuestions = useQuestionStore((state) => state.setAllQuestions)
+    const setPQuestions = useQuestionStore((state) => state.setPremiumQuestions)
     const setRandomQuestion = useQuestionStore((state) => state.setRandomQuestion)
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -20,11 +21,17 @@ function Layout({
                 // Fetch the questions from your API endpoint.
                 // You will need to create this API endpoint as shown in the previous response.
                 const response = await fetch('/api/questions');
+                const responseP = await fetch('/api/premiumQ');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                if (!responseP.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json(); // Parse the JSON response
-                setQuestions(data); // Set questions in Zustand store
+                const dataP = await responseP.json(); 
+                setQuestions(data);
+                setPQuestions(dataP) // Set questions in Zustand store
                 setRandomQuestion(); // Set random question after all questions are loaded
             } catch (err: any) {
                 console.error("Failed to load questions:", err);
