@@ -1,8 +1,8 @@
-// components/layout/Layout.tsx (assuming this path based on your import)
+
 "use client"
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
 import React, { useEffect, useState } from 'react'
-import Navbar from '../_components/layout/Navbar' // Ensure this path is correct
+import Navbar from '../_components/layout/Navbar'
 
 function Layout({
     children,
@@ -18,8 +18,7 @@ function Layout({
     useEffect(() => {
         const fetchQuestions = async () => {
             try {
-                // Fetch the questions from your API endpoint.
-                // You will need to create this API endpoint as shown in the previous response.
+              
                 const response = await fetch('/api/questions');
                 const responseP = await fetch('/api/premiumQ');
                 if (!response.ok) {
