@@ -9,45 +9,9 @@ type Question = {
   "Companies Asking This Question": string
   Topics: string
 }
-// src/utils/stores/useQuestionStore.ts (or wherever PQuestion is defined)
 
-// src/utils/stores/useQuestionStore.ts (or wherever your types are defined)
-
-// src/utils/stores/useQuestionStore.ts (or wherever your types are defined)
 export type PQuestion = any;
-// type Example = {
-//   // input can be a single string OR an array of strings
-//   input: string | string[];
 
-//   // output can be a single string, an array of strings, OR an array of mixed types
-//   output: string | string[] | (number | boolean | null)[]; // Changed from string | string[]
-
-//   image?: string;
-//   explanation?: string;
-
-//   // params can be a complex nested array. Using 'any' as a fallback,
-//   // or a more specific type if the structure is consistent.
-//   // Given number[][][][], let's try to be more specific if possible,
-//   // but if it varies wildly, 'any' might be needed.
-//   // For now, let's use a broader type to resolve the error.
-//   params?: any; // Change this from any[] to any, as number[][][][] is not an array of arrays of any.
-//                 // If it's *always* number[][][][], then use that.
-//                 // params?: number[][][][]; // If you want to be extremely strict and only this shape is allowed
-// };
-
-// export type PQuestion = {
-//   title: string;
-//   link: string;
-//   difficulty: string; // As decided previously, keeping this as string
-//   description: string;
-//   steps?: string[];
-//   illustration?: string | null;
-//   note?: string;
-//   key_points?: string[];
-//   examples: Example[]; // This will now correctly accept the updated Example type
-//   constraints: string[];
-//   process?: undefined; // Keep this if it's consistently undefined in your data
-// };
 interface QuestionState {
   premiumQuestions:PQuestion[]
   allQuestions: Question[]
