@@ -1,9 +1,6 @@
-// src/app/_components/challenges/PremiumQuestionCard.tsx (New file or renamed from QuestionCard.tsx)
-
 'use client'
 
-import { FC } from 'react' // useState for expansion removed as no companies/topics to expand
-import Link from 'next/link'
+import { FC } from 'react' 
 import { useRouter } from 'next/navigation'
 import { ArrowUpRight, Check, Circle } from 'lucide-react' // BadgeCheck, ChevronUp, ChevronDown removed
 import clsx from 'clsx'
@@ -26,7 +23,7 @@ type PQuestion = {
   note?: string;                 // Additional note about the problem
   key_points?: string[];         // For maze-type questions
   examples: Example[];           // Test case examples
-  constraints: string[];         // Problem constraints
+  constraints: string[];         
 };
 interface PremiumQuestionCardProps {
   question: PQuestion // Now expects PQuestion type
@@ -47,23 +44,18 @@ const getDifficultyStyle = (difficulty: string) => {
 
 const PremiumQuestionCard: FC<PremiumQuestionCardProps> = ({ question }) => {
   const router = useRouter()
-  // Use question.title as the identifier for solved status in the store
+
   const { markAsSolved, isSolved, setCurrentPQuestion, getQuestionIdFromUrl } = useQuestionStore()
 
-  const solved = isSolved(question.title) // Use question.title for solved status check
+  const solved = isSolved(question.title) 
 
-  // No more company or topic display logic as per PQuestion type
-  // const [isExpanded, setIsExpanded] = useState(false) // Removed
 
   const handleAITutorClick = () => {
-    // Extract ID from the LeetCode URL using the question's link
+  
     const questionId = getQuestionIdFromUrl(question.link)
     
-    // Set current question in store for the AI tutor page to access
-    // Assuming setCurrentQuestion in your store can handle a PQuestion type.
     setCurrentPQuestion(question)
     
-    // Navigate to the AI tutor page with the extracted ID
     router.push(`/leetcode/premium/${questionId}`)
   }
 
@@ -73,12 +65,12 @@ const PremiumQuestionCard: FC<PremiumQuestionCardProps> = ({ question }) => {
         <span
           className={clsx(
             'text-xs font-semibold px-3 text-center py-1 rounded-full',
-            getDifficultyStyle(question.difficulty) // Use question.difficulty
+            getDifficultyStyle(question.difficulty) 
           )}
         >
-          {question.difficulty} {/* Display question.difficulty */}
+          {question.difficulty} 
         </span>
-        {/* Removed: Frequency (Number of Companies) display, as it's not in PQuestion */}
+       
       </div>
 
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
