@@ -88,15 +88,8 @@ const PremiumQuestionCard: FC<PremiumQuestionCardProps> = ({ question }) => {
         {question?.description}
       </h3>
 
-      {/* Removed: Topics display, as it's not in PQuestion */}
-      {/* <p className="text-sm text-gray-600  dark:text-gray-300 mb-4">
-        Topics: <span className="font-medium">{question.Topics}</span>
-      </p> */}
-
-      {/* Removed: Companies section entirely, as PQuestion does not have this data */}
-      {/* If you add `companies: string[]` to PQuestion, you can reintroduce this. */}
-
-      <div className='flex justify-between items-center mt-4'> {/* Added mt-4 for spacing as previous sections are gone */}
+     
+      <div className='flex justify-between items-center mt-4'> 
        
 
         {/* Action Buttons */}
@@ -110,9 +103,9 @@ const PremiumQuestionCard: FC<PremiumQuestionCardProps> = ({ question }) => {
           View
           </Button>
 
-          {/* Solved Status Button */}
+      
           <button
-            onClick={() => markAsSolved(question.title)} // Use question.title for marking solved
+            onClick={() => markAsSolved(question.title)} 
             className={clsx(
               "group relative inline-flex items-center justify-center px-2 py-1 text-sm font-semibold rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm",
               solved
@@ -134,7 +127,7 @@ const PremiumQuestionCard: FC<PremiumQuestionCardProps> = ({ question }) => {
               )}
             </div>
             
-            {/* Subtle glow effect for solved state */}
+          
             {solved && (
               <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-400/20 to-green-500/20 blur-sm -z-10 group-hover:blur-md transition-all duration-200" />
             )}
