@@ -1,16 +1,9 @@
-// src/app/_components/challenges/ChallengeFilter.tsx (Adjust path if you're renaming it for premium)
-
 'use client'
 
 import { Search, Filter, X } from 'lucide-react'
 import { useChallengeFilterStoreP } from '@/utils/stores/useChallegeStoreP'// Use the new premium filter store
-import { useLayoutEffect, useState } from 'react' // useLayoutEffect might not be strictly necessary here
 
-// Note: useLoadProblems is designed for the old 'Question' type.
-// If you're filtering premium questions, you won't be loading companies/topics this way.
-// As per the discussion, we are removing company/topic filters from this component.
-// Therefore, `useLoadProblems` import is no longer directly relevant for this component.
-// You might remove it if it's only used for populating company/topic lists.
+
 
 const difficulties = ['Easy', 'Medium', 'Hard'] // Match PQuestion's casing
 
@@ -23,9 +16,7 @@ const ChallengeFilters = () => {
     clearAll,
     solved,
     setSolved
-  } = useChallengeFilterStoreP() // Use the premium filter store
-
-  // No longer need companyInput, topicInput, allCompanies, allTopics, etc.
+  } = useChallengeFilterStoreP() 
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md space-y-6">
@@ -103,7 +94,6 @@ const ChallengeFilters = () => {
           </select>
         </div>
 
-        {/* Removed: Companies and Topics sections */}
       </div>
     </div>
   )
