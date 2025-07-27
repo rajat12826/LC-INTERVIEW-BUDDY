@@ -1,10 +1,8 @@
 // src/utils/useLoadPremiumProblems.ts
 "use client"
 import { useEffect, useState } from 'react'
-import { useQuestionStore } from '@/utils/stores/useQuestionStore' // Import your question store
+import { useQuestionStore } from '@/utils/stores/useQuestionStore'
 
-// Define the structure for a "premium problem" as it will be used in components.
-// This closely mirrors the PQuestion type, but standardizes the 'id' for consistent use.
 type PremiumProblem = {
   id: string; // Extracted from the link for routing/identification
   title: string;
@@ -24,22 +22,19 @@ type PremiumProblem = {
   constraints: string[];
 };
 
-/**
- * A hook to load and process premium questions from the Zustand store.
- * It transforms the raw PQuestion data into a more component-friendly format
- * and extracts relevant metadata.
- */
+
+
 export default function useLoadPremiumProblems() {
-  // Get the raw premium questions array and the ID extraction utility from the store
+
   const premiumQuestionsRaw = useQuestionStore((state) => state.premiumQuestions);
   const getQuestionIdFromUrl = useQuestionStore((state) => state.getQuestionIdFromUrl);
 
-  // State to hold the processed premium problems
+
   const [premiumProblems, setPremiumProblems] = useState<PremiumProblem[]>([]);
 
-  // useEffect to process the raw data whenever premiumQuestionsRaw changes
+
   useEffect(() => {
-    // If no raw premium questions are available, or the array is empty, do nothing.
+
     if (!premiumQuestionsRaw || premiumQuestionsRaw.length === 0) {
       setPremiumProblems([]); // Ensure state is cleared if data goes away
       return;
@@ -61,7 +56,7 @@ export default function useLoadPremiumProblems() {
         constraints: pQuestion.constraints,
       }));
 
-      // Update the state with the processed problems
+
       setPremiumProblems(processedProblems);
     } catch (error) {
       console.error("Error processing premium questions:", error);
