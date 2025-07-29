@@ -54,7 +54,7 @@ const ToggleButton: React.FC<AnimatedDarkModeToggleProps> = ({
         active:scale-95 group
         ${className}
       `}
-      // aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
       type="button"
     >
       <div className="relative overflow-hidden" style={{ width: size, height: size }}>
