@@ -4,12 +4,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Webhook } from 'svix'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/server'
 
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Use service role key for server-side operations
-)
+
 
 export async function POST(req: NextRequest) {
   // Get the headers
@@ -66,7 +64,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Create user in Supabase
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('lc_users')
         .insert({
           clerk_user_id: id,
@@ -107,7 +105,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Update user in Supabase
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('lc_users')
         .update({
           email: primaryEmail.email_address,
@@ -135,7 +133,7 @@ export async function POST(req: NextRequest) {
       const { id } = evt.data
 
       // Delete user from Supabase (or mark as deleted)
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('lc_users')
         .delete()
         .eq('clerk_user_id', id)
