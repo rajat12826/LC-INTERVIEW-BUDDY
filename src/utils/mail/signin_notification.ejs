@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Security Alert: Your Account Signed In</title>
+    <style>
+        body, table, td, div, p, a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        img {
+            -ms-interpolation-mode: bicubic;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif !important;
+            line-height: 1.6;
+            color: #333 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #f8fafc !important;
+            width: 100% !important;
+        }
+
+        .main-container {
+            width: 100% !important;
+            background-color: #f8fafc !important;
+            padding: 20px 0 !important;
+        }
+
+        .email-wrapper {
+            width: 100% !important;
+            max-width: 650px !important;
+            margin: 0 auto !important;
+            background-color: #ffffff !important;
+            border-radius: 16px !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, #E24A4A 0%, #C53030 100%) !important;
+            padding: 40px 30px !important;
+            text-align: center !important;
+            border-radius: 16px 16px 0 0 !important;
+        }
+
+        .logo-container {
+            width: 80px !important;
+            height: 80px !important;
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border-radius: 20px !important;
+            margin: 0 auto 20px auto !important;
+            border: 3px solid rgba(255, 255, 255, 0.25) !important;
+            text-align: center !important;
+            padding: 8px !important;
+        }
+
+        .logo-img {
+            width: 100% !important;
+            height: auto !important;
+            max-width: 64px !important;
+            max-height: 64px !important;
+            display: block !important;
+            margin: 0 auto !important;
+        }
+
+        .header-title {
+            margin: 0 0 10px 0 !important;
+            font-size: 28px !important;
+            font-weight: bold !important;
+            color: #ffffff !important;
+            text-align: center !important;
+        }
+
+        .header-subtitle {
+            margin: 0 !important;
+            font-size: 16px !important;
+            color: rgba(255, 255, 255, 0.9) !important;
+            text-align: center !important;
+        }
+
+        .content-section {
+            padding: 30px 20px !important;
+            background-color: #ffffff !important;
+        }
+
+        .greeting {
+            font-size: 18px !important;
+            margin: 0 0 20px 0 !important;
+            color: #2d3748 !important;
+            font-weight: bold !important;
+        }
+
+        .main-text {
+            font-size: 15px !important;
+            color: #4a5568 !important;
+            margin: 0 0 20px 0 !important;
+            line-height: 1.6 !important;
+        }
+
+        .details-box {
+            background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%) !important;
+            border-left: 6px solid #E24A4A !important;
+            padding: 24px !important;
+            margin: 24px 0 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+        }
+
+        .section-title {
+            margin: 0 0 18px 0 !important;
+            color: #2d3748 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+        }
+
+        .info-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin: 0 !important;
+        }
+
+        .info-row {
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+        }
+
+        .info-row:last-child {
+            border-bottom: none !important;
+        }
+
+        .info-label {
+            padding: 8px 10px 8px 0 !important;
+            color: #4a5568 !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            vertical-align: top !important;
+            width: 35% !important;
+        }
+
+        .info-value {
+            padding: 8px 0 !important;
+            color: #E24A4A !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            text-align: right !important;
+            vertical-align: top !important;
+            word-break: break-word !important;
+        }
+
+        .device-grid {
+            display: table !important;
+            width: 100% !important;
+            margin: 20px 0 !important;
+        }
+
+        .device-row {
+            display: table-row !important;
+        }
+
+        .device-item {
+            display: table-cell !important;
+            width: 33.33% !important;
+            padding: 15px 8px !important;
+            text-align: center !important;
+            vertical-align: top !important;
+        }
+
+        .device-icon {
+            font-size: 24px !important;
+            margin-bottom: 8px !important;
+            display: block !important;
+        }
+
+        .device-label {
+            font-size: 11px !important;
+            color: #718096 !important;
+            text-transform: uppercase !important;
+            font-weight: bold !important;
+            margin-bottom: 4px !important;
+        }
+
+        .device-value {
+            font-size: 13px !important;
+            color: #2d3748 !important;
+            font-weight: bold !important;
+            word-break: break-word !important;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%) !important;
+            border-left: 6px solid #f56565 !important;
+            padding: 20px !important;
+            border-radius: 12px !important;
+            margin: 20px 0 !important;
+        }
+
+        .warning-title {
+            margin: 0 0 8px 0 !important;
+            font-size: 15px !important;
+            font-weight: bold !important;
+            color: #c53030 !important;
+        }
+
+        .warning-text {
+            margin: 0 !important;
+            font-size: 14px !important;
+            color: #742a2a !important;
+            line-height: 1.5 !important;
+        }
+
+        .cta-section {
+            text-align: center !important;
+            margin: 25px 0 !important;
+        }
+
+        .cta-button {
+            display: inline-block !important;
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%) !important;
+            color: #ffffff !important;
+            padding: 15px 30px !important;
+            text-decoration: none !important;
+            border-radius: 8px !important;
+            font-weight: bold !important;
+            font-size: 16px !important;
+            margin: 10px 8px !important;
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3) !important;
+        }
+
+        .support-box {
+            background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%) !important;
+            padding: 20px !important;
+            border-radius: 16px !important;
+            margin: 20px 0 !important;
+            text-align: center !important;
+        }
+
+        .support-title {
+            margin: 0 0 10px 0 !important;
+            color: #2d3748 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+        }
+
+        .support-text {
+            margin: 0 0 10px 0 !important;
+            font-size: 14px !important;
+            color: #4a5568 !important;
+        }
+
+        .support-email {
+            color: #3182ce !important;
+            text-decoration: none !important;
+            font-weight: bold !important;
+        }
+
+        .footer-section {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%) !important;
+            color: #a0aec0 !important;
+            padding: 20px !important;
+            text-align: center !important;
+            font-size: 12px !important;
+            border-radius: 0 0 16px 16px !important;
+        }
+
+        .footer-text {
+            margin: 5px 0 !important;
+            color: #a0aec0 !important;
+        }
+
+        .footer-heart {
+            color: #f56565 !important;
+        }
+
+        .signature {
+            font-size: 16px !important;
+            margin: 25px 0 0 0 !important;
+            color: #4a5568 !important;
+        }
+
+        .signature-name {
+            color: #3182ce !important;
+            font-weight: bold !important;
+        }
+
+        /* Mobile responsive */
+        @media only screen and (max-width: 600px) {
+            .main-container {
+                padding: 10px 0 !important;
+            }
+            .email-wrapper {
+                width: 95% !important;
+                margin: 0 auto !important;
+            }
+            .header-section {
+                padding: 20px 15px !important;
+            }
+            .content-section {
+                padding: 20px 15px !important;
+            }
+            .header-title {
+                font-size: 22px !important;
+            }
+            .device-item {
+                display: block !important;
+                width: 100% !important;
+                padding: 10px 0 !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+                margin-bottom: 10px !important;
+            }
+            .device-item:last-child {
+                border-bottom: none !important;
+                margin-bottom: 0 !important;
+            }
+            .info-label {
+                width: 40% !important;
+                font-size: 13px !important;
+            }
+            .info-value {
+                font-size: 13px !important;
+            }
+            .cta-button {
+                display: block !important;
+                margin: 15px 0 !important;
+                padding: 12px 25px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table class="main-container" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" valign="top">
+                <table class="email-wrapper" width="650" cellpadding="0" cellspacing="0" border="0" style="max-width: 650px; width: 100%; background-color: #ffffff; border-radius: 16px;">
+
+                    <tr>
+                        <td class="header-section" style="background: linear-gradient(135deg, #E24A4A 0%, #C53030 100%); padding: 40px 30px; text-align: center; border-radius: 16px 16px 0 0;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center">
+                                        <table class="logo-container" width="80" cellpadding="8" cellspacing="0" border="0" style="width: 80px; height: 80px; background-color: rgba(255, 255, 255, 0.15); border-radius: 20px; margin: 0 auto 20px auto; border: 3px solid rgba(255, 255, 255, 0.25);">
+                                            <tr>
+                                                <td align="center" valign="middle">
+                                                    <img src="https://res.cloudinary.com/metube128/image/upload/v1753111031/logo-1_zu7bua.png" alt="LC Interview Buddy Logo" class="logo-img" style="width: 100%; height: auto; max-width: 64px; max-height: 64px; display: block;">
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <h1 class="header-title" style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold; color: #ffffff;">🔒 Security Alert: Account Sign-In</h1>
+                                        <p class="header-subtitle" style="margin: 0; font-size: 16px; color: rgba(255, 255, 255, 0.9);">Your LC Interview Buddy account was just accessed</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td class="content-section" style="padding: 30px 20px; background-color: #ffffff;">
+                            <h2 class="greeting" style="font-size: 18px; margin: 0 0 20px 0; color: #2d3748; font-weight: bold;">Hello <%= name %>,</h2>
+
+                            <p class="main-text" style="font-size: 15px; color: #4a5568; margin: 0 0 20px 0; line-height: 1.6;">
+                                We're writing to inform you that your LC Interview Buddy account was just signed in. Here are the details of this activity:
+                            </p>
+
+                            <table class="details-box" width="100%" cellpadding="24" cellspacing="0" border="0" style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border-left: 6px solid #E24A4A; border-radius: 12px; margin: 24px 0;">
+                                <tr>
+                                    <td>
+                                        <h3 class="section-title" style="margin: 0 0 18px 0; color: #2d3748; font-size: 16px; font-weight: bold;">📋 Sign-In Information</h3>
+                                        <table class="info-table" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr class="info-row">
+                                                <td class="info-label" style="padding: 8px 10px 8px 0; color: #4a5568; font-weight: bold; font-size: 14px;">💻 Device:</td>
+                                                <td class="info-value" style="padding: 8px 0; color: #E24A4A; font-weight: bold; font-size: 14px; text-align: right; word-break: break-word;"><%= deviceType %></td>
+                                            </tr>
+                                            <tr class="info-row">
+                                                <td class="info-label" style="padding: 8px 10px 8px 0; color: #4a5568; font-weight: bold; font-size: 14px;">🌐 Browser:</td>
+                                                <td class="info-value" style="padding: 8px 0; color: #E24A4A; font-weight: bold; font-size: 14px; text-align: right; word-break: break-word;"><%= browser %></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="info-label" style="padding: 8px 10px 8px 0; color: #4a5568; font-weight: bold; font-size: 14px;">⚙️ System:</td>
+                                                <td class="info-value" style="padding: 8px 0; color: #E24A4A; font-weight: bold; font-size: 14px; text-align: right; word-break: break-word;"><%= operatingSystem %></td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Device Summary Cards -->
+                                        <div class="device-grid" style="display: table; width: 100%; margin: 20px 0;">
+                                            <div class="device-row" style="display: table-row;">
+                                                <div class="device-item" style="display: table-cell; width: 33.33%; padding: 15px 8px; text-align: center; vertical-align: top;">
+                                                    <span class="device-icon" style="font-size: 24px; margin-bottom: 8px; display: block;">📱</span>
+                                                    <div class="device-label" style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">DEVICE</div>
+                                                    <div class="device-value" style="font-size: 13px; color: #2d3748; font-weight: bold; word-break: break-word;"><%= deviceType %></div>
+                                                </div>
+                                                <div class="device-item" style="display: table-cell; width: 33.33%; padding: 15px 8px; text-align: center; vertical-align: top;">
+                                                    <span class="device-icon" style="font-size: 24px; margin-bottom: 8px; display: block;">🌐</span>
+                                                    <div class="device-label" style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">BROWSER</div>
+                                                    <div class="device-value" style="font-size: 13px; color: #2d3748; font-weight: bold; word-break: break-word;"><%= browser %></div>
+                                                </div>
+                                                <div class="device-item" style="display: table-cell; width: 33.33%; padding: 15px 8px; text-align: center; vertical-align: top;">
+                                                    <span class="device-icon" style="font-size: 24px; margin-bottom: 8px; display: block;">⚙️</span>
+                                                    <div class="device-label" style="font-size: 11px; color: #718096; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">SYSTEM</div>
+                                                    <div class="device-value" style="font-size: 13px; color: #2d3748; font-weight: bold; word-break: break-word;"><%= operatingSystem %></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p class="main-text" style="font-size: 15px; color: #4a5568; margin: 0 0 20px 0; line-height: 1.6;">
+                                If this was you, you can safely ignore this email. This notification is sent every time you sign in to help keep your account secure.
+                            </p>
+
+                            <table class="warning-box" width="100%" cellpadding="20" cellspacing="0" border="0" style="background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); border-left: 6px solid #f56565; border-radius: 12px; margin: 20px 0;">
+                                <tr>
+                                    <td>
+                                        <div class="warning-title" style="margin: 0 0 8px 0; font-size: 15px; font-weight: bold; color: #c53030;">🚨 Didn't sign in?</div>
+                                        <div class="warning-text" style="margin: 0; font-size: 14px; color: #742a2a; line-height: 1.5;">
+                                            If you did NOT sign in at this time, please secure your account immediately by changing your password and contact our support team at 
+                                            <a href="mailto:lcinterviewbuddy@gmail.com" class="support-email" style="color: #3182ce; text-decoration: none; font-weight: bold;">lcinterviewbuddy@gmail.com</a>.
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div class="cta-section" style="text-align: center; margin: 25px 0;">
+                                <a href="<%= dashboardUrl %>" class="cta-button" style="display: inline-block; background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 10px 8px;">
+                                    🏠 Go to Dashboard
+                                </a>
+                                <a href="<%= securityUrl %>" class="cta-button" style="display: inline-block; background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 10px 8px;">
+                                    🔒 Security Settings
+                                </a>
+                            </div>
+
+                            <p class="main-text" style="font-size: 15px; color: #4a5568; margin: 0 0 20px 0; line-height: 1.6;">
+                                We're committed to keeping your account secure. Thank you for being a valued member of the LC Interview Buddy community.
+                            </p>
+
+                            <table class="support-box" width="100%" cellpadding="20" cellspacing="0" border="0" style="background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%); border-radius: 16px; margin: 20px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <div class="support-title" style="margin: 0 0 10px 0; color: #2d3748; font-size: 16px; font-weight: bold;">Need Help? 🤝</div>
+                                        <div class="support-text" style="margin: 0 0 10px 0; font-size: 14px; color: #4a5568;">
+                                            If you have any questions or concerns about this sign-in activity, our support team is here to help.
+                                        </div>
+                                        <div style="margin: 0; font-size: 14px; color: #4a5568;">
+                                            Contact us: <a href="mailto:lcinterviewbuddy@gmail.com" class="support-email" style="color: #3182ce; text-decoration: none; font-weight: bold;">lcinterviewbuddy@gmail.com</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div class="signature" style="font-size: 16px; margin: 25px 0 0 0; color: #4a5568;">
+                                Stay secure,<br>
+                                <strong class="signature-name" style="color: #3182ce; font-weight: bold;">The LC Interview Buddy Team</strong>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td class="footer-section" style="background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); color: #a0aec0; padding: 20px; text-align: center; font-size: 12px; border-radius: 0 0 16px 16px;">
+                            <div class="footer-text" style="margin: 5px 0; color: #a0aec0;">&copy; 2025 LC Interview Buddy. All rights reserved.</div>
+                            <div class="footer-text" style="margin: 5px 0; color: #a0aec0;">
+                                Made with <span class="footer-heart" style="color: #f56565;">❤️</span> for developers worldwide
+                            </div>
+                            <div class="footer-text" style="margin: 10px 0 5px 0; color: #718096; font-size: 11px;">
+                                This is an automated security notification. Please do not reply to this email.
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>">
+                       
