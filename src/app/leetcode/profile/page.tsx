@@ -173,8 +173,8 @@ export default function ProfilePage() {
           const errorData = await submissionsResponse.json();
           throw new Error(errorData.error || `Failed to fetch LeetCode submissions for ${leetcodeUsername}`);
         }
-        const submissionsData: LeetCodeSubmission[] = await submissionsResponse.json();
-        setLeetcodeSubmissions(submissionsData);
+        const submissionsData:any = await submissionsResponse.json();
+        setLeetcodeSubmissions(submissionsData?.submissions);
 
       } catch (err: any) {
         console.error('Error fetching LeetCode data:', err);
@@ -249,7 +249,11 @@ export default function ProfilePage() {
   }));
 
   const submissionTrendMap = new Map<string, { date: string; total: number; accepted: number }>();
+  // console.log(leetcodeSubmissions);
+  
 if (Array.isArray(leetcodeSubmissions)) {
+  // console.log(leetcodeSubmissions);
+  
     leetcodeSubmissions.forEach(submission => {
       const date = new Date(parseInt(submission.timestamp) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       if (!submissionTrendMap.has(date)) {

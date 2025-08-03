@@ -1,29 +1,76 @@
-// app/api/leetcode-submissions/[username]/route.ts
-// This API route fetches a user's recent LeetCode submissions.
-
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request, { params }: { params: { username: string } }) {
+const LEETCODE_SUBMISSIONS_QUERY = `
+  query recentSubmissions($username: String!, $limit: Int!) {
+    recentAcSubmissionList(username: $username, limit: $limit) {
+      id
+      title
+      titleSlug
+      timestamp
+      statusDisplay
+      lang
+    }
+  }
+`;
+
+export async function GET(
+  request: Request, 
+  { params }: { params: { username: string } }
+) {
   try {
-    const { username } = params;
+    const { username } = await params;
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '20');
+
     if (!username) {
-      return NextResponse.json({ error: 'LeetCode username is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'LeetCode username is required' }, 
+        { status: 400 }
+      );
     }
 
-    // You can adjust the limit as needed, or make it a query parameter
-    const leetcodeApiUrl = `https://leetcode-api-pied.vercel.app/user/${username}/submissions?limit=20`;
-    const response = await fetch(leetcodeApiUrl);
+    const leetcodeApiUrl = 'https://leetcode.com/graphql';
+
+    const response = await fetch(leetcodeApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; LeetCodeAPI/1.0)',
+      },
+      body: JSON.stringify({
+        query: LEETCODE_SUBMISSIONS_QUERY,
+        variables: { username, limit },
+      }),
+    });
 
     if (!response.ok) {
-      // If LeetCode API returns an error, pass it through
-      const errorData = await response.json();
-      return NextResponse.json({ error: errorData.error || `Failed to fetch LeetCode submissions for ${username}` }, { status: response.status });
+      console.error(`Error fetching submissions: ${response.status}`);
+      return NextResponse.json(
+        { error: `Failed to fetch LeetCode submissions for ${username}` }, 
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+
+    if (!data.data?.recentAcSubmissionList) {
+      return NextResponse.json(
+        { error: `No submissions found for user '${username}'` }, 
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      username,
+      submissions: data.data.recentAcSubmissionList,
+      count: data.data.recentAcSubmissionList.length
+    });
+
   } catch (error: any) {
     console.error('Error fetching LeetCode submissions:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' }, 
+      { status: 500 }
+    );
   }
 }
