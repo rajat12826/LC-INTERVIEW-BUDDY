@@ -1,28 +1,29 @@
 // app/profile/page.tsx
-// Modern, professional profile page with enhanced UI/UX
-// Inspired by Google's Material Design and contemporary web standards
+// Redesigned with distinctive UI following Master Design System principles
+// Clean, bold, and memorable interface with React Bits-inspired components
 
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-
 import dynamic from 'next/dynamic';
+
 const DynamicDifficultyPieChart = dynamic(() => import('@/app/_components/charts/DifficultyPieChart'), {
-  ssr: false, // Recharts requires browser APIs, so disable SSR
-  loading: () => <Skeleton className="w-full h-64 rounded-lg" />, // Placeholder while loading
+  ssr: false,
+  loading: () => <div className="w-full h-64 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900 animate-pulse" />,
 });
 
 const DynamicSubmissionBarChart = dynamic(() => import('@/app/_components/charts/SubmissionBarChart'), {
   ssr: false,
-  loading: () => <Skeleton className="w-full h-64 rounded-lg" />,
+  loading: () => <div className="w-full h-64 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900 animate-pulse" />,
 });
 
 const DynamicSubmissionLineChart = dynamic(() => import('@/app/_components/charts/SubmissionLineChart'), {
   ssr: false,
-  loading: () => <Skeleton className="w-full h-64 rounded-lg" />,
+  loading: () => <div className="w-full h-64 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900 animate-pulse" />,
 });
+
 // Shadcn UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; // Import Tabs components
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Define types for LeetCode API responses
 interface LeetCodeProfile {
@@ -70,6 +71,92 @@ interface UserProfile {
   payment_status: string | null;
 }
 
+// Animated Grid Background Component
+const GridBackground = () => (
+  <div className="absolute inset-0 -z-10 overflow-hidden">
+    <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] dark:bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)]" />
+    <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[600px] w-[600px] rounded-full bg-blue-400/20 blur-[100px] dark:bg-blue-600/10" />
+  </div>
+);
+
+// Animated Stat Card Component
+const StatCard = ({
+  value,
+  label,
+  icon,
+  color = "emerald",
+  delay = 0
+}: {
+  value: string | number;
+  label: string;
+  icon: React.ReactNode;
+  color?: string;
+  delay?: number;
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  const colorClasses = {
+    emerald: "from-blue-500 to-teal-500 dark:from-blue-400 dark:to-teal-400",
+    amber: "from-amber-500 to-orange-500 dark:from-amber-400 dark:to-orange-400",
+    rose: "from-rose-500 to-pink-500 dark:from-rose-400 dark:to-pink-400",
+    violet: "from-violet-500 to-purple-500 dark:from-violet-400 dark:to-purple-400",
+  };
+
+  return (
+    <div
+      className={`group relative overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700/60 p-6 transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/5 ${isVisible ? 'opacity-100 tranzinc-y-0' : 'opacity-0 tranzinc-y-4'
+        }`}
+    >
+      {/* Gradient overlay on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent dark:from-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+      <div className="relative flex items-start justify-between">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+            {label}
+          </p>
+          <p className="text-3xl font-bold bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-white dark:to-zinc-300 bg-clip-text text-transparent">
+            {value}
+          </p>
+        </div>
+        <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} shadow-lg`}>
+          {icon}
+        </div>
+      </div>
+
+      {/* Animated border shimmer */}
+      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    </div>
+  );
+};
+
+// Animated Badge Component
+const AnimatedBadge = ({
+  children,
+  variant = "default"
+}: {
+  children: React.ReactNode;
+  variant?: "success" | "warning" | "error" | "default";
+}) => {
+  const variants = {
+    success: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800",
+    warning: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800",
+    error: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800",
+    default: "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
+  };
+
+  return (
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-300 hover:scale-105 ${variants[variant]}`}>
+      {children}
+    </span>
+  );
+};
+
 export default function ProfilePage() {
   const { user, isLoaded: isClerkLoaded, isSignedIn } = useUser();
   const router = useRouter();
@@ -78,7 +165,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('charts'); // State for active tab: 'charts' or 'submissions'
+  const [activeTab, setActiveTab] = useState('charts');
 
   // Form states
   const [userName, setUserName] = useState<string>('');
@@ -94,20 +181,16 @@ export default function ProfilePage() {
   const [darkMode, setDarkMode] = useState(false);
 
   // Effect to listen for changes to the 'dark' class on the html element
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setDarkMode(document.documentElement.classList.contains('dark'));
-    });
+  // useEffect(() => {
+  //   const observer = new MutationObserver(() => {
+  //     setDarkMode(document.documentElement.classList.contains('dark'));
+  //   });
 
-    // Observe changes to the 'class' attribute of the html element
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  //   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  //   setDarkMode(document.documentElement.classList.contains('dark'));
 
-    // Set initial dark mode state
-    setDarkMode(document.documentElement.classList.contains('dark'));
-
-    // Cleanup observer on component unmount
-    return () => observer.disconnect();
-  }, []);
+  //   return () => observer.disconnect();
+  // }, []);
 
   // Fetch user profile from Supabase on component mount
   useEffect(() => {
@@ -158,7 +241,6 @@ export default function ProfilePage() {
       setLeetcodeError(null);
 
       try {
-        // Fetch LeetCode Profile
         const profileResponse = await fetch(`/api/leetcode-profile/${leetcodeUsername}`);
         if (!profileResponse.ok) {
           const errorData = await profileResponse.json();
@@ -167,13 +249,12 @@ export default function ProfilePage() {
         const profileData: LeetCodeProfile = await profileResponse.json();
         setLeetcodeProfile(profileData);
 
-        // Fetch LeetCode Submissions
         const submissionsResponse = await fetch(`/api/leetcode-submissions/${leetcodeUsername}`);
         if (!submissionsResponse.ok) {
           const errorData = await submissionsResponse.json();
           throw new Error(errorData.error || `Failed to fetch LeetCode submissions for ${leetcodeUsername}`);
         }
-        const submissionsData:any = await submissionsResponse.json();
+        const submissionsData: any = await submissionsResponse.json();
         setLeetcodeSubmissions(submissionsData?.submissions);
 
       } catch (err: any) {
@@ -210,27 +291,15 @@ export default function ProfilePage() {
       }
 
       setSuccessMessage('Profile updated successfully!');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
       console.error('Error updating profile:', err);
       setError(err.message || 'An unexpected error occurred during update.');
     } finally {
       setSaving(false);
     }
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
-      case 'easy': return 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-700';
-      case 'medium': return 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-700';
-      case 'hard': return 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-700';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200 dark:text-gray-400 dark:bg-gray-700/30 dark:border-gray-600';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    return status === 'Accepted'
-      ? 'text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-800/50'
-      : 'text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-800/50';
   };
 
   // Prepare chart data
@@ -245,15 +314,12 @@ export default function ProfilePage() {
   const pieChartData = difficultyData?.map(item => ({
     name: item.name,
     value: item.solved,
-    color: item.name === 'Easy' ? '#10B981' : item.name === 'Medium' ? '#F59E0B' : '#EF4444' // Tailwind colors
+    color: item.name === 'Easy' ? '#10B981' : item.name === 'Medium' ? '#F59E0B' : '#EF4444'
   }));
 
   const submissionTrendMap = new Map<string, { date: string; total: number; accepted: number }>();
-  // console.log(leetcodeSubmissions);
-  
-if (Array.isArray(leetcodeSubmissions)) {
-  // console.log(leetcodeSubmissions);
-  
+
+  if (Array.isArray(leetcodeSubmissions)) {
     leetcodeSubmissions.forEach(submission => {
       const date = new Date(parseInt(submission.timestamp) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       if (!submissionTrendMap.has(date)) {
@@ -269,20 +335,12 @@ if (Array.isArray(leetcodeSubmissions)) {
 
   const submissionTrendData = Array.from(submissionTrendMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const COLORS = ['#10B981', '#F59E0B', '#EF4444']; // Colors for Pie Chart segments
-
-  // Theme-dependent classes for Recharts
-  const chartAxisColor = darkMode ? '#9CA3AF' : '#6B7280'; // gray-400 / gray-500
-  const chartGridColor = darkMode ? '#374151' : '#E5E7EB'; // gray-700 / gray-200
-  const chartTooltipBg = darkMode ? '#374151' : '#FFFFFF'; // gray-700 / white
-  const chartTooltipText = darkMode ? '#F9FAFB' : '#111827'; // gray-50 / gray-900
-
   if (!isClerkLoaded || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-lg text-gray-600 font-medium dark:text-gray-300">Loading your profile...</p>
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-zinc-200 border-t-blue-500 dark:border-zinc-800 dark:border-t-blue-400 mb-6"></div>
+          <p className="text-lg font-medium text-zinc-700 dark:text-zinc-300">Loading your profile...</p>
         </div>
       </div>
     );
@@ -290,80 +348,94 @@ if (Array.isArray(leetcodeSubmissions)) {
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <p className="text-lg text-red-600 dark:text-red-400">Please sign in to view your profile.</p>
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-rose-600 dark:text-rose-400">Please sign in to view your profile.</p>
+        </div>
       </div>
     );
   }
 
-  const themeClasses = {
-    bg: darkMode ? 'bg-gray-900' : 'bg-gray-50',
-    cardBg: darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200',
-    headerBg: darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200',
-    text: darkMode ? 'text-gray-100' : 'text-gray-900',
-    textSecondary: darkMode ? 'text-gray-300' : 'text-gray-600',
-    textMuted: darkMode ? 'text-gray-400' : 'text-gray-500',
-    input: darkMode ? 'bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-600 focus:bg-gray-600' : 'bg-gray-50 border-gray-300 hover:bg-white focus:bg-white',
-    accent: darkMode ? 'bg-gray-700' : 'bg-gray-50'
-  };
-
   return (
-    <div className={`min-h-screen ${themeClasses.bg} transition-colors duration-300`}>
-      {/* Header Section */}
-      <div className={`${themeClasses.headerBg} shadow-lg border-b transition-colors duration-300`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
+      <GridBackground />
+
+      {/* Hero Header */}
+      <div className="relative border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              {/* Avatar with gradient ring */}
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-teal-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500 animate-pulse"></div>
+                <div className="relative h-20 w-20 rounded-full bg-gradient-to-br from-blue-400 to-teal-600 flex items-center justify-center text-white text-3xl font-bold shadow-xl">
                   {userName.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                  <div className="h-2 w-2 bg-white rounded-full"></div>
-                </div>
               </div>
+
               <div>
-                <h1 className={`text-3xl font-bold ${themeClasses.text}`}>Profile Dashboard</h1>
-                <p className={`${themeClasses.textSecondary} mt-1`}>Manage your account and LeetCode integration</p>
+                <h1 className="text-4xl font-bold bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-700 dark:from-white dark:via-zinc-100 dark:to-zinc-300 bg-clip-text text-transparent mb-2">
+                  {userName || 'Your Profile'}
+                </h1>
+                <p className="text-zinc-600 dark:text-zinc-400 font-medium">
+                  Manage your coding journey
+                </p>
               </div>
             </div>
+
+            {leetcodeProfile && (
+              <div className="flex items-center gap-3">
+                <AnimatedBadge variant="success">
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
+                  Active
+                </AnimatedBadge>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                    #{leetcodeProfile.profile.ranking?.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400">Global Rank</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-          {/* Profile Form Section */}
-          <div className="xl:col-span-1">
-            <Card className={`rounded-2xl shadow-xl border p-6 backdrop-blur-sm ${themeClasses.bg}  transition-colors duration-300`}>
-              <CardHeader className="p-0 mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                    <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+          {/* Sidebar - Profile Settings */}
+          <div className="lg:col-span-4">
+            <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl shadow-xl shadow-zinc-200/50 dark:shadow-zinc-900/50">
+              <CardHeader>
+                <CardTitle className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-teal-600">
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <CardTitle className={`text-xl font-semibold ${themeClasses.text}`}>Personal Information</CardTitle>
-                </div>
+                  Profile Settings
+                </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+
+              <CardContent className="space-y-6">
                 {error && (
-                  <Alert variant="destructive" className="mb-4">
-                    <AlertTitle>Error</AlertTitle>
+                  <Alert variant="destructive" className="border-rose-200 dark:border-rose-800">
+                    <AlertTitle className="font-semibold">Error</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
 
                 {successMessage && (
-                  <Alert className="mb-4">
-                    <AlertTitle>Success</AlertTitle>
-                    <AlertDescription>{successMessage}</AlertDescription>
+                  <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
+                    <AlertTitle className="font-semibold text-blue-900 dark:text-blue-100">Success</AlertTitle>
+                    <AlertDescription className="text-blue-800 dark:text-blue-200">{successMessage}</AlertDescription>
                   </Alert>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <Label htmlFor="name" className="mb-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                       Display Name
                     </Label>
                     <Input
@@ -371,12 +443,13 @@ if (Array.isArray(leetcodeSubmissions)) {
                       id="name"
                       value={userName}
                       onChange={(e) => setUserName(e.target.value)}
-                      placeholder="Enter your display name"
+                      placeholder="Enter your name"
+                      className="border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all"
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="leetcodeUsername" className="mb-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="leetcodeUsername" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                       LeetCode Username
                     </Label>
                     <div className="relative">
@@ -386,31 +459,31 @@ if (Array.isArray(leetcodeSubmissions)) {
                         value={leetcodeUsername}
                         onChange={(e) => setLeetcodeUsername(e.target.value)}
                         placeholder="your_leetcode_username"
-                        className="pl-12"
+                        className="pl-10 border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all"
                       />
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-gray-400 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 2L3 7v11a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V7l-7-5z" />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
                       </div>
                     </div>
-                    <p className={`mt-2 text-xs ${themeClasses.textMuted}`}>
-                      Connect your LeetCode account to display your coding statistics
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
+                      Connect your LeetCode to track your progress
                     </p>
                   </div>
 
                   <Button
                     type="submit"
                     disabled={saving}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    className="w-full bg-gradient-to-r from-blue-500 to-teal-600 hover:from-blue-600 hover:to-teal-700 text-white font-semibold py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
                     {saving ? (
-                      <span className="flex items-center justify-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Saving Changes...
+                        Saving...
                       </span>
                     ) : (
                       'Save Changes'
@@ -422,283 +495,261 @@ if (Array.isArray(leetcodeSubmissions)) {
           </div>
 
           {/* Main Content Area */}
-          <div className="xl:col-span-3 space-y-8">
+          <div className="lg:col-span-8 space-y-8">
             {loadingLeetcode ? (
-              <Card className="rounded-2xl shadow-lg border p-8">
-                <CardContent className="flex items-center justify-center h-48 p-0">
-                  <div className="text-center">
-                    <Skeleton className="inline-block rounded-full h-12 w-12 mb-4" />
-                    <p className={`text-lg font-medium ${themeClasses.textSecondary}`}>Loading LeetCode statistics...</p>
-                  </div>
+              <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
+                <CardContent className="flex flex-col items-center justify-center h-64 p-12">
+                  <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-zinc-200 border-t-blue-500 dark:border-zinc-800 dark:border-t-blue-400 mb-6"></div>
+                  <p className="text-lg font-medium text-zinc-700 dark:text-zinc-300">Loading LeetCode data...</p>
                 </CardContent>
               </Card>
             ) : leetcodeError ? (
-              <Alert variant="destructive" className="rounded-2xl shadow-lg border p-8">
-                <AlertTitle className="flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="ml-2 text-lg font-medium">Unable to Load LeetCode Data</span>
-                </AlertTitle>
-                <AlertDescription className="text-center">
-                  <p className={`${themeClasses.textSecondary}`}>{leetcodeError}</p>
-                  <p className={`text-sm ${themeClasses.textMuted} mt-2`}>Please verify your username and ensure your profile is public.</p>
+              <Alert variant="destructive" className="border-rose-200 dark:border-rose-800 p-8">
+                <AlertTitle className="text-lg font-semibold mb-2">Unable to Load LeetCode Data</AlertTitle>
+                <AlertDescription className="text-zinc-700 dark:text-zinc-300">
+                  {leetcodeError}
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
+                    Please verify your username and ensure your profile is public.
+                  </p>
                 </AlertDescription>
               </Alert>
             ) : leetcodeProfile ? (
               <>
-                {/* LeetCode Profile Header */}
-                <Card className={`rounded-2xl shadow-xl border p-6 backdrop-blur-sm ${themeClasses.bg} transition-colors duration-300`}>
-                  <CardHeader className="p-0 mb-6">
-                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between">
-                      <div className="flex items-center space-x-4 mb-4 lg:mb-0">
-                        <div className="relative">
-                          <div className="h-16 w-16 rounded-full bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                            LC
-                          </div>
-                          <div className="absolute -top-1 -right-1 h-6 w-6 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
-                            <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        </div>
-                        <div>
-                          <CardTitle className={`text-2xl font-bold ${themeClasses.text}`}>
-                            {leetcodeProfile.profile.realName || leetcodeProfile.username}
-                          </CardTitle>
-                          <CardDescription className={`${themeClasses.textSecondary}`}>@{leetcodeProfile.username}</CardDescription>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className={`text-sm ${themeClasses.textMuted}`}>Active LeetCoder</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-left lg:text-right">
-                        <p className={`text-3xl font-bold ${themeClasses.text}`}>#{leetcodeProfile.profile.ranking?.toLocaleString()}</p>
-                        <p className={`text-sm ${themeClasses.textSecondary}`}>Global Ranking</p>
-                        <div className="flex items-center space-x-1 mt-2">
-                          <div className="flex space-x-1">
-                            {[1,2,3,4].map((star) => (
-                              <svg key={star} className="h-4 w-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                            ))}
-                          </div>
-                          <span className={`text-xs ${themeClasses.textMuted} ml-1`}>4.0</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {/* Enhanced Stats Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className={`text-center p-4 ${themeClasses.accent} rounded-xl border transition-all duration-200 hover:shadow-lg hover:scale-105`}>
-                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-                          {leetcodeProfile.submitStats.acSubmissionNum.find(s => s.difficulty === 'All')?.count || 0}
-                        </p>
-                        <p className={`text-sm ${themeClasses.textSecondary}`}>Problems Solved</p>
-                      </div>
-                      <div className="text-center p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                        <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-1">
-                          {leetcodeProfile.submitStats.totalSubmissionNum.find(s => s.difficulty === 'All')?.count || 0}
-                        </p>
-                        <p className={`text-sm ${themeClasses.textSecondary}`}>Total Submissions</p>
-                      </div>
-                      <div className="text-center p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                        <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-1">{leetcodeProfile.profile.reputation?.toLocaleString() || 'N/A'}</p>
-                        <p className={`text-sm ${themeClasses.textSecondary}`}>Reputation</p>
-                      </div>
-                      <div className="text-center p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                        <p className="text-3xl font-bold text-teal-600 dark:text-teal-400 mb-1">
-                          {Math.round(((leetcodeProfile.submitStats.acSubmissionNum.find(s => s.difficulty === 'All')?.count || 0) / Math.max(leetcodeProfile.submitStats.totalSubmissionNum.find(s => s.difficulty === 'All')?.count || 1, 1)) * 100)}%
-                        </p>
-                        <p className={`text-sm ${themeClasses.textSecondary}`}>Acceptance Rate</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <StatCard
+                    value={leetcodeProfile.submitStats.acSubmissionNum.find(s => s.difficulty === 'All')?.count || 0}
+                    label="Problems Solved"
+                    color="emerald"
+                    delay={100}
+                    icon={
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    }
+                  />
+
+                  <StatCard
+                    value={leetcodeProfile.submitStats.totalSubmissionNum.find(s => s.difficulty === 'All')?.count || 0}
+                    label="Total Submissions"
+                    color="amber"
+                    delay={200}
+                    icon={
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                      </svg>
+                    }
+                  />
+
+                  <StatCard
+                    value={leetcodeProfile.profile.reputation?.toLocaleString() || 'N/A'}
+                    label="Reputation"
+                    color="violet"
+                    delay={300}
+                    icon={
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    }
+                  />
+
+                  <StatCard
+                    value={`${Math.round(((leetcodeProfile.submitStats.acSubmissionNum.find(s => s.difficulty === 'All')?.count || 0) / Math.max(leetcodeProfile.submitStats.totalSubmissionNum.find(s => s.difficulty === 'All')?.count || 1, 1)) * 100)}%`}
+                    label="Acceptance Rate"
+                    color="rose"
+                    delay={400}
+                    icon={
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    }
+                  />
+                </div>
 
                 {/* Tabs for Charts/Submissions */}
-                <Tabs defaultValue="charts" value={activeTab} onValueChange={setActiveTab} className={`w-full ${themeClasses.bg}`}>
-                  <TabsList className={`grid w-full grid-cols-2 mb-6 dark:bg-gray-800 `}>
-                    <TabsTrigger value="charts">Charts</TabsTrigger>
-                    <TabsTrigger value="submissions">Submissions</TabsTrigger>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl border border-zinc-200/60 dark:border-zinc-800/60 p-1">
+                    <TabsTrigger
+                      value="charts"
+                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-teal-600 data-[state=active]:text-white font-semibold rounded-lg transition-all"
+                    >
+                      Analytics
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="submissions"
+                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-teal-600 data-[state=active]:text-white font-semibold rounded-lg transition-all"
+                    >
+                      Submissions
+                    </TabsTrigger>
                   </TabsList>
-                  <TabsContent value="charts" className="space-y-8">
+
+                  <TabsContent value="charts" className="mt-8 space-y-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      
-                   <Card className={`rounded-2xl shadow-xl border p-6 backdrop-blur-sm ${themeClasses.bg} transition-colors duration-300`}>
-                        <CardHeader className="p-0 mb-4">
-                          <CardTitle className={`text-xl font-semibold ${themeClasses.text} flex items-center`}>
-                            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-green-500 to-blue-600 flex items-center justify-center mr-3">
-                              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                              </svg>
-                            </div>
-                            Problems by Difficulty
+                      <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
+                        <CardHeader>
+                          <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                            Difficulty Distribution
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="h-64 p-0">
+                        <CardContent className="h-64">
                           {pieChartData && pieChartData.length > 0 ? (
                             <DynamicDifficultyPieChart data={pieChartData} darkMode={darkMode} />
                           ) : (
-                            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No data for Pie Chart</div>
+                            <div className="flex items-center justify-center h-full text-zinc-500 dark:text-zinc-400">
+                              No data available
+                            </div>
                           )}
                         </CardContent>
                       </Card>
 
-                      {/* Submission Comparison Bar Chart */}
-                      <Card className={`rounded-2xl shadow-xl border p-6 ${themeClasses.bg} backdrop-blur-sm transition-colors duration-300`}>
-                        <CardHeader className="p-0 mb-4">
-                          <CardTitle className={`text-xl font-semibold ${themeClasses.text} flex items-center`}>
-                            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center mr-3">
-                              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </div>
-                            Submissions by Difficulty
+                      <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
+                        <CardHeader>
+                          <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                            Submissions Overview
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="h-64 p-0">
+                        <CardContent className="h-64">
                           {difficultyData && difficultyData.length > 0 ? (
                             <DynamicSubmissionBarChart data={difficultyData} darkMode={darkMode} />
                           ) : (
-                            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No data for Bar Chart</div>
+                            <div className="flex items-center justify-center h-full text-zinc-500 dark:text-zinc-400">
+                              No data available
+                            </div>
                           )}
                         </CardContent>
                       </Card>
 
-                      {/* Submission Trend Line Chart */}
                       {submissionTrendData.length > 0 && (
-                        <Card className={`rounded-2xl shadow-xl border p-6 backdrop-blur-sm ${themeClasses.bg} transition-colors duration-300 lg:col-span-2`}>
-                          <CardHeader className="p-0 mb-4">
-                            <CardTitle className={`text-xl font-semibold ${themeClasses.text} flex items-center`}>
-                              <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-600 flex items-center justify-center mr-3">
-                                <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                </svg>
-                              </div>
-                              Submission Trend
+                        <Card className="lg:col-span-2 border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
+                          <CardHeader>
+                            <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></div>
+                              Activity Trend
                             </CardTitle>
                           </CardHeader>
-                          <CardContent className="h-64 p-0">
-                            {submissionTrendData && submissionTrendData.length > 0 ? (
-                              <DynamicSubmissionLineChart data={submissionTrendData} darkMode={darkMode} />
-                            ) : (
-                              <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No data for Line Chart</div>
-                            )}
+                          <CardContent className="h-64">
+                            <DynamicSubmissionLineChart data={submissionTrendData} darkMode={darkMode} />
                           </CardContent>
                         </Card>
                       )}
                     </div>
                   </TabsContent>
-                  <TabsContent value="submissions" className=" space-y-8">
+
+                  <TabsContent value="submissions" className="mt-8">
                     {leetcodeSubmissions.length > 0 ? (
-                      <Card className={`rounded-2xl shadow-xl border ${themeClasses.bg} p-6 backdrop-blur-sm transition-colors duration-300`}>
-                        <CardHeader className="p-0 mb-6">
-                          <CardTitle className={`text-xl font-semibold ${themeClasses.text} flex items-center`}>
-                            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-600 flex items-center justify-center mr-3">
-                              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                              </svg>
-                            </div>
-                            Recent Submissions
+                      <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
+                        <CardHeader>
+                          <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white">
+                            Recent Activity
                           </CardTitle>
+                          <CardDescription className="text-zinc-600 dark:text-zinc-400">
+                            Your latest {leetcodeSubmissions.slice(0, 10).length} submissions
+                          </CardDescription>
                         </CardHeader>
-                        <CardContent className="p-0">
-                          <div className="space-y-3">
-                            {leetcodeSubmissions.slice(0, 10).map((submission, index) => (
-                              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200 border border-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600">
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-gray-900 dark:text-white">{submission.title}</h4>
-                                  <div className="flex items-center space-x-4 mt-1">
-                                    <span className={`px-2 py-1 rounded-full text-xs w-24 font-medium ${getStatusColor(submission.statusDisplay)}`}>
-                                      {submission.statusDisplay}
-                                    </span>
-                                    <span className="text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded-full dark:bg-gray-500 dark:text-gray-200">
-                                      {submission.lang}
-                                    </span>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {new Date(parseInt(submission.timestamp) * 1000).toLocaleDateString()}
-                                    </span>
-                                  </div>
+                        <CardContent className="space-y-3">
+                          {leetcodeSubmissions.slice(0, 10).map((submission, index) => (
+                            <div
+                              key={index}
+                              className="group flex items-center justify-between p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50/50 dark:bg-zinc-800/50 hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-zinc-900 dark:text-white mb-2 truncate">
+                                  {submission.title}
+                                </h4>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <AnimatedBadge variant={submission.statusDisplay === 'Accepted' ? 'success' : 'error'}>
+                                    {submission.statusDisplay}
+                                  </AnimatedBadge>
+                                  <AnimatedBadge variant="default">
+                                    {submission.lang}
+                                  </AnimatedBadge>
+                                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                    {new Date(parseInt(submission.timestamp) * 1000).toLocaleDateString()}
+                                  </span>
                                 </div>
-                                <a
-                                  href={`https://leetcode.com${submission.url}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-4 inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-400 transition-colors duration-200 shadow-sm dark:bg-gray-700 dark:text-blue-400 dark:border-gray-600 dark:hover:bg-gray-600 dark:hover:border-blue-300"
-                                >
-                                  <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                  </svg>
-                                  View
-                                </a>
                               </div>
-                            ))}
-                          </div>
+
+                              <a
+                                href={`https://leetcode.com${submission.url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-teal-600 hover:from-blue-600 hover:to-teal-700 text-white font-medium text-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                              >
+                                <span>View</span>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                            </div>
+                          ))}
                         </CardContent>
                       </Card>
                     ) : (
-                      <Alert className="rounded-2xl shadow-lg border p-8">
-                        <AlertTitle className="flex items-center justify-center mb-4">
-                          <svg className="h-8 w-8 text-gray-400 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span className="ml-2 text-lg font-medium">No Submissions Found</span>
+                      <Alert className="border-zinc-200 dark:border-zinc-800 p-8">
+                        <AlertTitle className="text-lg font-semibold mb-2 text-zinc-900 dark:text-white">
+                          No Submissions Found
                         </AlertTitle>
-                        <AlertDescription className="text-center">
-                          <p className={`${themeClasses.textSecondary}`}>No recent LeetCode submissions found for "{leetcodeUsername}".</p>
-                          <p className={`text-sm ${themeClasses.textMuted} mt-1`}>Make sure your LeetCode profile is public and you have recent activity.</p>
+                        <AlertDescription className="text-zinc-600 dark:text-zinc-400">
+                          No recent submissions found for "{leetcodeUsername}". Make sure your profile is public.
                         </AlertDescription>
                       </Alert>
                     )}
                   </TabsContent>
                 </Tabs>
               </>
-            ) : leetcodeUsername ? ( // If username is set but no profile, and not loading/error, means no data
-              <Alert className="rounded-2xl shadow-lg border p-8">
-                <AlertTitle className="flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-gray-400 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="ml-2 text-lg font-medium">No Data Found</span>
+            ) : leetcodeUsername ? (
+              <Alert className="border-zinc-200 dark:border-zinc-800 p-8">
+                <AlertTitle className="text-lg font-semibold mb-2 text-zinc-900 dark:text-white">
+                  No Data Found
                 </AlertTitle>
-                <AlertDescription className="text-center">
-                  <p className={`${themeClasses.textSecondary}`}>No LeetCode profile data found for "{leetcodeUsername}".</p>
-                  <p className={`text-sm ${themeClasses.textMuted} mt-1`}>Please verify the username is correct and your profile is public.</p>
+                <AlertDescription className="text-zinc-600 dark:text-zinc-400">
+                  Could not find LeetCode profile for "{leetcodeUsername}". Please verify the username.
                 </AlertDescription>
               </Alert>
-            ) : ( // No LeetCode username set at all
-              <Card className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-200 p-8 shadow-lg dark:from-blue-900/30 dark:to-purple-900/30 dark:border-blue-800">
-                <CardContent className="text-center py-6 p-0">
-                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4 shadow-md dark:bg-blue-800/50">
-                    <svg className="h-8 w-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            ) : (
+              <Card className="border-blue-200/60 dark:border-blue-800/60 bg-gradient-to-br from-blue-50/50 to-teal-50/50 dark:from-blue-950/20 dark:to-teal-950/20 backdrop-blur-xl">
+                <CardContent className="text-center py-16 px-8">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-teal-600 mb-6 shadow-xl">
+                    <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <CardTitle className={`text-xl font-semibold ${themeClasses.text} mb-2`}>Connect Your LeetCode</CardTitle>
-                  <CardDescription className={`${themeClasses.textSecondary} mb-4`}>
-                    Link your LeetCode username to see detailed statistics, recent submissions, and track your coding progress.
+
+                  <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-white mb-3">
+                    Connect Your LeetCode
+                  </CardTitle>
+
+                  <CardDescription className="text-zinc-600 dark:text-zinc-400 mb-8 max-w-md mx-auto">
+                    Link your LeetCode account to unlock detailed analytics, track your progress, and visualize your coding journey.
                   </CardDescription>
-                  <div className={`space-y-2 text-sm text-blue-600 dark:text-blue-400`}>
-                    <div className="flex items-center justify-center space-x-2">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm font-medium">
+                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
-                      <span>View your coding statistics</span>
+                      <span>Track Progress</span>
                     </div>
-                    <div className="flex items-center justify-center space-x-2">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+
+                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                       </svg>
-                      <span>Track progress over time</span>
+                      <span>View Analytics</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      <span>Monitor Growth</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            )
-            }
+            )}
           </div>
         </div>
       </div>

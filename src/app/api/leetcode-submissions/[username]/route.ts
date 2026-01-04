@@ -1,75 +1,52 @@
-import { NextResponse } from 'next/server';
-
-const LEETCODE_SUBMISSIONS_QUERY = `
-  query recentSubmissions($username: String!, $limit: Int!) {
-    recentAcSubmissionList(username: $username, limit: $limit) {
-      id
-      title
-      titleSlug
-      timestamp
-      statusDisplay
-      lang
-    }
-  }
-`;
+import { NextResponse } from "next/server";
 
 export async function GET(
-  request: Request, 
+  request: Request,
   { params }: { params: { username: string } }
 ) {
   try {
-    const { username } = await params;
+    const { username } = params;
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = searchParams.get("limit") || "20";
 
     if (!username) {
       return NextResponse.json(
-        { error: 'LeetCode username is required' }, 
+        { error: "LeetCode username is required" },
         { status: 400 }
       );
     }
 
-    const leetcodeApiUrl = 'https://leetcode.com/graphql';
+    const apiUrl = `https://leetcode-api-pied.vercel.app/user/${username}/submissions?limit=${limit}`;
 
-    const response = await fetch(leetcodeApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; LeetCodeAPI/1.0)',
-      },
-      body: JSON.stringify({
-        query: LEETCODE_SUBMISSIONS_QUERY,
-        variables: { username, limit },
-      }),
+    const res = await fetch(apiUrl, {
+      cache: "no-store",
     });
 
-    if (!response.ok) {
-      console.error(`Error fetching submissions: ${response.status}`);
+    if (!res.ok) {
       return NextResponse.json(
-        { error: `Failed to fetch LeetCode submissions for ${username}` }, 
-        { status: response.status }
+        { error: `Failed to fetch submissions for ${username}` },
+        { status: res.status }
       );
     }
 
-    const data = await response.json();
+    const submissions = await res.json();
 
-    if (!data.data?.recentAcSubmissionList) {
+    if (!Array.isArray(submissions) || submissions.length === 0) {
       return NextResponse.json(
-        { error: `No submissions found for user '${username}'` }, 
+        { error: `No submissions found for '${username}'` },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       username,
-      submissions: data.data.recentAcSubmissionList,
-      count: data.data.recentAcSubmissionList.length
+      count: submissions.length,
+      submissions,
     });
-
-  } catch (error: any) {
-    console.error('Error fetching LeetCode submissions:', error);
+  } catch (err) {
+    console.error("Submissions fetch error:", err);
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

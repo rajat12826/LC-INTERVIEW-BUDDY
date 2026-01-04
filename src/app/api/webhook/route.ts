@@ -22,6 +22,7 @@ interface PaymentMetadata {
 
 interface SupabaseUpdateData {
   is_premium: boolean;
+  is_main:boolean;
   updated_at: string;
   stripe_customer_id: string;
   payment_id: string;
@@ -183,6 +184,7 @@ async function updateUserPremiumStatus(
     // Update Supabase record
     const supabaseUpdateData: SupabaseUpdateData = {
       is_premium: true,
+      is_main:true,
       updated_at: new Date().toISOString(),
       stripe_customer_id: metadata.customer_id,
       payment_id: metadata.payment_id,

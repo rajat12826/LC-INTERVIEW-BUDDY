@@ -1,24 +1,20 @@
 'use client'
 
-import { Search, Filter, X } from 'lucide-react'
+import { Search, X, Filter } from 'lucide-react'
 import { useChallengeFilterStore } from '@/utils/stores/useChallengeFilterStore'
-import { useLayoutEffect, useState } from 'react'
+import { useState } from 'react'
 import useLoadProblems from '@/utils/useLoadProblems'
 
-
 const difficulties = ['EASY', 'MEDIUM', 'HARD']
-
 
 const ChallengeFilters = () => {
   const {
     search,
     difficulty,
-    category,
     companies,
     topics,
     setSearch,
     setDifficulty,
-    setCategory,
     addCompany,
     removeCompany,
     addTopic,
@@ -27,13 +23,13 @@ const ChallengeFilters = () => {
     solved,
     setSolved
   } = useChallengeFilterStore()
-  const { allProblems, allCompanies, allTopics }=useLoadProblems()
-  // console.log(allTopics);
+  
+  const { allCompanies, allTopics } = useLoadProblems()
   
   const [companyInput, setCompanyInput] = useState('')
   const [topicInput, setTopicInput] = useState('')
 
-  // Filter suggestions that include input and are NOT already selected
+  // Filter suggestions
   const filteredCompanies = allCompanies.filter(
     (c) =>
       c.toLowerCase().includes(companyInput.toLowerCase()) &&
@@ -44,182 +40,232 @@ const ChallengeFilters = () => {
     (t) => t.toLowerCase().includes(topicInput.toLowerCase()) && !topics.includes(t)
   )
 
-  // Handle selecting a company from suggestions
   const onSelectCompany = (company: string) => {
     addCompany(company)
     setCompanyInput('')
   }
 
-  // Handle selecting a topic from suggestions
   const onSelectTopic = (topic: string) => {
     addTopic(topic)
     setTopicInput('')
   }
 
+  const activeFiltersCount = 
+    (search ? 1 : 0) + 
+    (difficulty ? 1 : 0) + 
+    companies.length + 
+    topics.length + 
+    (solved !== 'all' ? 1 : 0)
+
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Filter className="text-blue-600 dark:text-blue-400" />
-          <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
-            Filter Challenges
-          </h3>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-800 dark:from-white dark:to-zinc-100 text-white dark:text-zinc-900 shadow-lg">
+            <Filter className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+              Filter Problems
+            </h3>
+            {activeFiltersCount > 0 && (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                {activeFiltersCount} active {activeFiltersCount === 1 ? 'filter' : 'filters'}
+              </p>
+            )}
+          </div>
         </div>
-        <button
-          onClick={clearAll}
-          className="flex items-center text-sm text-gray-600 dark:text-gray-300 hover:underline"
-        >
-          <X className="w-4 h-4 mr-1" />
-          Clear All
-        </button>
+        
+        {activeFiltersCount > 0 && (
+          <button
+            onClick={clearAll}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition-all duration-200 border border-zinc-200 dark:border-zinc-700"
+          >
+            <X className="w-4 h-4" />
+            Clear All
+          </button>
+        )}
       </div>
 
-      {/* Filters Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Search */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Search
-          </label>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full p-2 rounded-lg border text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="Search by title or topic..."
-          />
-        </div>
+      {/* Filters Grid - Improved Layout */}
+      <div className="space-y-6">
+        {/* Top Row - Search takes prominence */}
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Search - Wider */}
+          <div className="md:col-span-3 lg:col-span-1">
+            <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-3 uppercase tracking-wider">
+              Search Problems
+            </label>
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -tranzinc-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200"
+                placeholder="Search by title or topic..."
+              />
+            </div>
+          </div>
 
-        {/* Difficulty */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Difficulty
-          </label>
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-            className="w-full p-2 text-gray-900 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          >
-            <option value="">All</option>
-            {difficulties.map((diff) => (
-              <option key={diff} value={diff}>
-                {diff}
-              </option>
-            ))}
-          </select>
-        </div>
-{/* Solved Filter */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-    Status
-  </label>
-  <select
-    value={solved}
-    onChange={(e) => setSolved(e.target.value as 'all' | 'solved' | 'unsolved')}
-    className="w-full p-2 text-gray-900 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-  >
-    <option value="all">All</option>
-    <option value="solved">Solved</option>
-    <option value="unsolved">Unsolved</option>
-  </select>
-</div>
-
-       
-
-        {/* Companies - autocomplete input */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Companies
-          </label>
-          <input
-            type="text"
-            placeholder="Type to search companies..."
-            value={companyInput}
-            onChange={(e) => setCompanyInput(e.target.value)}
-            className="w-full p-2 mb-2 rounded-lg border dark:bg-gray-700 text-gray-900 dark:border-gray-600 dark:text-white"
-          />
-          {companyInput && filteredCompanies.length > 0 && (
-            <ul className="max-h-32 overflow-y-auto border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 space-y-1 cursor-pointer">
-              {filteredCompanies.map((company) => (
-                <li
-                  key={company}
-                  onClick={() => onSelectCompany(company)}
-                  className="text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-600 hover:text-white rounded px-2 py-1"
-                >
-                  {company}
-                </li>
+          {/* Difficulty */}
+          <div>
+            <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-3 uppercase tracking-wider">
+              Difficulty Level
+            </label>
+            <select
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value)}
+              className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200 cursor-pointer appearance-none"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25rem' }}
+            >
+              <option value="">All Levels</option>
+              {difficulties.map((diff) => (
+                <option key={diff} value={diff}>
+                  {diff.charAt(0) + diff.slice(1).toLowerCase()}
+                </option>
               ))}
-            </ul>
-          )}
+            </select>
+          </div>
 
-          {/* Selected companies as tags */}
-          <div className="flex flex-wrap gap-2 mt-2">
-            {companies.map((c) => (
-              <span
-                key={c}
-                className="flex items-center bg-blue-600 text-white rounded-full px-3 py-1 text-sm"
-              >
-                {c}
-                <button
-                  onClick={() => removeCompany(c)}
-                  className="ml-2 focus:outline-none"
-                  aria-label={`Remove ${c}`}
-                >
-                  &times;
-                </button>
-              </span>
-            ))}
+          {/* Status */}
+          <div>
+            <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-3 uppercase tracking-wider">
+              Problem Status
+            </label>
+            <select
+              value={solved}
+              onChange={(e) => setSolved(e.target.value as 'all' | 'solved' | 'unsolved')}
+              className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200 cursor-pointer appearance-none"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25rem' }}
+            >
+              <option value="all">All Status</option>
+              <option value="solved">Solved</option>
+              <option value="unsolved">Unsolved</option>
+            </select>
           </div>
         </div>
 
-        {/* Topics - autocomplete input */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Topics
-          </label>
-          <input
-            type="text"
-            placeholder="Type to search topics..."
-            value={topicInput}
-            onChange={(e) => setTopicInput(e.target.value)}
-            className="w-full p-2 mb-2 rounded-lg border text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-          {topicInput && filteredTopics.length > 0 && (
-            <ul className="max-h-32 overflow-y-auto border p-2 rounded-lg dark:bg-gray-700 dark:border-gray-600 space-y-1 cursor-pointer">
-              {filteredTopics.map((topic) => (
-                <li
-                  key={topic}
-                  onClick={() => onSelectTopic(topic)}
-                  className="text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-600 hover:text-white rounded px-2 py-1"
-                >
-                  {topic}
-                </li>
-              ))}
-            </ul>
-          )}
+        {/* Bottom Row - Companies and Topics */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Companies */}
+          <div>
+            <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-3 uppercase tracking-wider">
+              Filter by Companies
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search companies..."
+                value={companyInput}
+                onChange={(e) => setCompanyInput(e.target.value)}
+                className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200"
+              />
+              {companyInput && filteredCompanies.length > 0 && (
+                <div className="absolute z-20 w-full mt-2 max-h-60 overflow-y-auto bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl">
+                  {filteredCompanies.slice(0, 10).map((company) => (
+                    <button
+                      key={company}
+                      onClick={() => onSelectCompany(company)}
+                      className="w-full text-left px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors first:rounded-t-xl last:rounded-b-xl"
+                    >
+                      {company}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* Selected topics as tags */}
-          <div className="flex flex-wrap gap-2 mt-2">
-            {topics.map((t) => (
-              <span
-                key={t}
-                className="flex items-center bg-blue-600 text-white rounded-full px-3 py-1 text-sm"
-              >
-                {t}
-                <button
-                  onClick={() => removeTopic(t)}
-                  className="ml-2 focus:outline-none"
-                  aria-label={`Remove ${t}`}
-                >
-                  &times;
-                </button>
-              </span>
-            ))}
+            {/* Selected companies */}
+            {companies.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {companies.map((c) => (
+                  <FilterTag
+                    key={c}
+                    label={c}
+                    onRemove={() => removeCompany(c)}
+                    color="sky"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Topics */}
+          <div>
+            <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-3 uppercase tracking-wider">
+              Filter by Topics
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search topics..."
+                value={topicInput}
+                onChange={(e) => setTopicInput(e.target.value)}
+                className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200"
+              />
+              {topicInput && filteredTopics.length > 0 && (
+                <div className="absolute z-20 w-full mt-2 max-h-60 overflow-y-auto bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl">
+                  {filteredTopics.slice(0, 10).map((topic) => (
+                    <button
+                      key={topic}
+                      onClick={() => onSelectTopic(topic)}
+                      className="w-full text-left px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors first:rounded-t-xl last:rounded-b-xl"
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selected topics */}
+            {topics.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {topics.map((t) => (
+                  <FilterTag
+                    key={t}
+                    label={t}
+                    onRemove={() => removeTopic(t)}
+                    color="indigo"
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
+  )
+}
+
+// Filter Tag Component
+function FilterTag({ 
+  label, 
+  onRemove, 
+  color 
+}: { 
+  label: string
+  onRemove: () => void
+  color: 'sky' | 'indigo'
+}) {
+  const colorClasses = {
+    sky: 'bg-sky-100 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-900/50 hover:bg-sky-200 dark:hover:bg-sky-900/50',
+    indigo: 'bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-200 dark:hover:bg-indigo-900/50',
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold border rounded-lg transition-all duration-200 ${colorClasses[color]}`}>
+      <span className="max-w-[150px] truncate">{label}</span>
+      <button
+        onClick={onRemove}
+        className="hover:scale-110 transition-transform duration-200"
+        aria-label={`Remove ${label}`}
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </span>
   )
 }
 
