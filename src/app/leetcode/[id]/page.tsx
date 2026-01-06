@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic'
 
 import { chatSession } from '@/utils/GeminiAIModel' 
 import useMobile from '@/hooks/useMobile'
+import { useTheme } from 'next-themes'
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { 
@@ -42,6 +43,7 @@ interface ChatMessage {
 
 export default function AITutorPage() {
   const params = useParams()
+const {theme}=useTheme();
   const router = useRouter()
   const { getQuestionById, currentQuestion } = useQuestionStore()
   const mobile = useMobile()
@@ -747,7 +749,7 @@ Ready to begin? Share your approach or ask for guidance.`,
                           <div className="flex items-center gap-3">
                          <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
   <svg
-    className="w-4 h-4 text-blue-500"
+    className={`w-4 h-4 ${theme=="dark"?" text-blue-500 ":" text-white "}`}
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -783,7 +785,7 @@ Ready to begin? Share your approach or ask for guidance.`,
                             {message.role === 'assistant' && (
                              <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
   <svg
-    className="w-4 h-4 text-blue-500"
+    className={`w-4 h-4 ${theme=="dark"?" text-blue-500 ":" text-white "}`}
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -900,7 +902,7 @@ Ready to begin? Share your approach or ask for guidance.`,
                           <div className="flex items-center gap-3">
                            <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
   <svg
-    className="w-4 h-4 text-blue-500"
+    className={`w-4 h-4 ${theme=="dark"?" text-blue-500 ":" text-white "}`}
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
