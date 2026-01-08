@@ -58,7 +58,7 @@ function useVirtualScrolling(items: PQuestion[], itemsPerPage = 20) {
 export default function ChallengesPage() {
   // Get premiumQuestions from the store, which are of type PQuestion[]
   const allPremiumQuestions = useQuestionStore((state) => state.premiumQuestions)
-  console.log(allPremiumQuestions);
+  // console.log(allPremiumQuestions);
   
   // Use the new premium filter store
   const { search, difficulty, solved, clearAll } = useChallengeFilterStoreP()
@@ -70,7 +70,7 @@ export default function ChallengesPage() {
   
     
     return allPremiumQuestions.filter((q) => {
-          console.log(q);
+          // console.log(q);
       // Filter by title (PQuestion's 'title' field) or description
       const matchesSearch =
         search === '' ||

@@ -42,7 +42,7 @@ class MonacoErrorBoundary extends Component<Props, State> {
         error.message.includes('model') ||
         error.message.includes('editor')) {
       
-      console.log('Monaco Editor error detected, auto-retrying in 1 second...');
+      // console.log('Monaco Editor error detected, auto-retrying in 1 second...');
       
       this.retryTimeoutId = setTimeout(() => {
         this.handleRetry();
@@ -149,7 +149,7 @@ const SafeMonacoEditor: React.FC<SafeMonacoEditorProps> = ({
   // Handle language changes safely
   useEffect(() => {
     if (currentLanguage !== language && isReady) {
-      console.log(`Language change detected: ${currentLanguage} -> ${language}`);
+      // console.log(`Language change detected: ${currentLanguage} -> ${language}`);
       isChangingLanguage.current = true;
       setIsReady(false);
       
@@ -162,7 +162,7 @@ const SafeMonacoEditor: React.FC<SafeMonacoEditorProps> = ({
   }, [language, currentLanguage, isReady]);
 
   const handleEditorDidMount = useCallback((editor: any, monacoInstance: any) => {
-    console.log('Editor mounted with language:', currentLanguage);
+    // console.log('Editor mounted with language:', currentLanguage);
     
     editorRef.current = editor;
     
@@ -178,7 +178,7 @@ const SafeMonacoEditor: React.FC<SafeMonacoEditorProps> = ({
           onMount(editor, monacoInstance);
         }
         
-        console.log('Editor fully ready');
+        // console.log('Editor fully ready');
       } else {
         // Retry after a short delay
         setTimeout(checkModel, 50);
@@ -190,7 +190,7 @@ const SafeMonacoEditor: React.FC<SafeMonacoEditorProps> = ({
 
     // Handle model changes (language switches)
     editor.onDidChangeModel(() => {
-      console.log('Model changed');
+      // console.log('Model changed');
       const newModel = editor.getModel();
       if (newModel && !newModel.isDisposed()) {
         modelRef.current = newModel;

@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://githubreadmegen.vercel.app
+Host: https://lc-interview-buddy.vercel.app
 
 # Sitemaps
-Sitemap: https://githubreadmegen.vercel.app/sitemap.xml
+Sitemap: https://lc-interview-buddy.vercel.app/sitemap.xml

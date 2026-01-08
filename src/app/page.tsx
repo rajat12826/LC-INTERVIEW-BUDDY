@@ -62,7 +62,7 @@ const {theme}=useTheme()
         }
 
         if (existingUser) {
-          router.push(existingUser.is_premium ? '/leetcode' : '/subscription')
+          router.push( '/leetcode')
         } else {
           const newUuid = crypto.randomUUID()
           const { error: insertError } = await supabase
@@ -80,7 +80,7 @@ const {theme}=useTheme()
             return
           }
 
-          router.push('/subscription')
+          router.push('/leetcode')
         }
       }
     } catch (error) {

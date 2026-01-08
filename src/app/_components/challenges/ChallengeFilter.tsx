@@ -1,11 +1,50 @@
 'use client'
 
-import { Search, X, Filter } from 'lucide-react'
+import { Search, X, Filter, ChevronDown, ChevronUp } from 'lucide-react'
 import { useChallengeFilterStore } from '@/utils/stores/useChallengeFilterStore'
 import { useState } from 'react'
 import useLoadProblems from '@/utils/useLoadProblems'
 
 const difficulties = ['EASY', 'MEDIUM', 'HARD']
+
+// Popular topics with problem counts
+const popularTopics = [
+  { name: 'Arrays & Hashing', count: 158 },
+  { name: 'Two Pointers', count: 37 },
+  { name: 'Sliding Window', count: 41 },
+  { name: 'Stack', count: 39 },
+  { name: 'Binary Search', count: 39 },
+  { name: 'Linked List', count: 39 },
+  { name: 'Trees', count: 88 },
+  { name: 'Heap / Priority Queue', count: 31 },
+  { name: 'Backtracking', count: 33 },
+  { name: 'Tries', count: 11 },
+  { name: 'Graphs', count: 68 },
+  { name: 'Advanced Graphs', count: 29 },
+  { name: '1-D Dynamic Programming', count: 49 },
+  { name: '2-D Dynamic Programming', count: 50 },
+  { name: 'Greedy', count: 65 },
+  { name: 'Intervals', count: 20 },
+  { name: 'Math & Geometry', count: 60 },
+  { name: 'Bit Manipulation', count: 29 },
+  { name: 'JavaScript', count: 30 },
+]
+
+// Popular companies
+const popularCompanies = [
+  'Amazon', 'Google', 'Microsoft', 'Apple', 'Meta', 'Netflix',
+  'Adobe', 'Bloomberg', 'Goldman Sachs', 'Uber', 'Airbnb', 'Tesla',
+  'Oracle', 'Salesforce', 'IBM', 'Walmart', 'PayPal', 'LinkedIn',
+  'Twitter', 'Snap', 'Stripe', 'Coinbase', 'Dropbox', 'Atlassian',
+  'AMD', 'Accenture', 'Accolite', 'Agoda', 'Akamai', 'Altimetrik',
+  'Amadeus', 'American Express', 'Atlassian', 'Avito', 'BNY Mellon',
+  'Barclays', 'BlackStone', 'Bolt', 'Braze', 'ByteDance', 'Cadence',
+  'Capgemini', 'Careem', 'Chewy', 'Cisco', 'Coforge', 'Cognizant',
+  'Comcast', 'Criteo', 'Deloitte', 'Deutsche Bank', 'Devsinc',
+  'Docusign', 'DoorDash', 'EPAM Systems', 'EY', 'EarnIn',
+  'Epic Systems', 'Expedia', 'FPT', 'Fidelity', 'Flipkart',
+  'FreshWorks', 'Grab', 'HCL', 'Huawei',
+]
 
 const ChallengeFilters = () => {
   const {
@@ -28,6 +67,8 @@ const ChallengeFilters = () => {
   
   const [companyInput, setCompanyInput] = useState('')
   const [topicInput, setTopicInput] = useState('')
+  const [showAllTopics, setShowAllTopics] = useState(false)
+  const [showAllCompanies, setShowAllCompanies] = useState(false)
 
   // Filter suggestions
   const filteredCompanies = allCompanies.filter(
@@ -56,6 +97,10 @@ const ChallengeFilters = () => {
     companies.length + 
     topics.length + 
     (solved !== 'all' ? 1 : 0)
+
+  // Filter out already selected items
+  const availableTopics = popularTopics.filter(t => !topics.includes(t.name))
+  const availableCompanies = popularCompanies.filter(c => !companies.includes(c))
 
   return (
     <div className="space-y-8">
@@ -98,7 +143,7 @@ const ChallengeFilters = () => {
               Search Problems
             </label>
             <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -tranzinc-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" />
               <input
                 type="text"
                 value={search}
@@ -157,7 +202,7 @@ const ChallengeFilters = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search companies..."
+                placeholder="Search or select companies..."
                 value={companyInput}
                 onChange={(e) => setCompanyInput(e.target.value)}
                 className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200"
@@ -177,17 +222,60 @@ const ChallengeFilters = () => {
               )}
             </div>
 
+            {/* Quick Select Companies */}
+            {!companyInput && availableCompanies.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+                    Quick Select
+                  </span>
+                  {availableCompanies.length > 12 && (
+                    <button
+                      onClick={() => setShowAllCompanies(!showAllCompanies)}
+                      className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 transition-colors"
+                    >
+                      {showAllCompanies ? (
+                        <>
+                          Show Less <ChevronUp className="w-3 h-3" />
+                        </>
+                      ) : (
+                        <>
+                          Show All <ChevronDown className="w-3 h-3" />
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(showAllCompanies ? availableCompanies : availableCompanies.slice(0, 12)).map((company) => (
+                    <button
+                      key={company}
+                      onClick={() => onSelectCompany(company)}
+                      className="px-3 py-1.5 text-xs font-semibold bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-2 border-zinc-200 dark:border-zinc-800 rounded-lg hover:border-sky-400 dark:hover:border-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/30 hover:text-sky-700 dark:hover:text-sky-300 transition-all duration-200"
+                    >
+                      {company}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Selected companies */}
             {companies.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {companies.map((c) => (
-                  <FilterTag
-                    key={c}
-                    label={c}
-                    onRemove={() => removeCompany(c)}
-                    color="sky"
-                  />
-                ))}
+              <div className="mt-4">
+                <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-2 block">
+                  Selected ({companies.length})
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {companies.map((c) => (
+                    <FilterTag
+                      key={c}
+                      label={c}
+                      onRemove={() => removeCompany(c)}
+                      color="sky"
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -200,7 +288,7 @@ const ChallengeFilters = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search topics..."
+                placeholder="Search or select topics..."
                 value={topicInput}
                 onChange={(e) => setTopicInput(e.target.value)}
                 className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200"
@@ -220,17 +308,61 @@ const ChallengeFilters = () => {
               )}
             </div>
 
+            {/* Quick Select Topics */}
+            {!topicInput && availableTopics.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+                    Quick Select
+                  </span>
+                  {availableTopics.length > 10 && (
+                    <button
+                      onClick={() => setShowAllTopics(!showAllTopics)}
+                      className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 transition-colors"
+                    >
+                      {showAllTopics ? (
+                        <>
+                          Show Less <ChevronUp className="w-3 h-3" />
+                        </>
+                      ) : (
+                        <>
+                          Show All <ChevronDown className="w-3 h-3" />
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(showAllTopics ? availableTopics : availableTopics.slice(0, 10)).map((topic) => (
+                    <button
+                      key={topic.name}
+                      onClick={() => onSelectTopic(topic.name)}
+                      className="px-3 py-1.5  text-xs font-semibold bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-2 border-zinc-200 dark:border-zinc-800 rounded-lg hover:border-green-400 dark:hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 hover:text-green-700 dark:hover:text-green-300 transition-all duration-200 flex items-center gap-1.5"
+                    >
+                      <span>{topic.name}</span>
+                      {/* <span className="text-[10px] opacity-60">({topic.count})</span> */}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Selected topics */}
             {topics.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {topics.map((t) => (
-                  <FilterTag
-                    key={t}
-                    label={t}
-                    onRemove={() => removeTopic(t)}
-                    color="indigo"
-                  />
-                ))}
+              <div className="mt-4">
+                <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-2 block">
+                  Selected ({topics.length})
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {topics.map((t) => (
+                    <FilterTag
+                      key={t}
+                      label={t}
+                      onRemove={() => removeTopic(t)}
+                      color='green'
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -248,11 +380,12 @@ function FilterTag({
 }: { 
   label: string
   onRemove: () => void
-  color: 'sky' | 'indigo'
+  color: 'sky' | 'indigo' |'green'
 }) {
   const colorClasses = {
     sky: 'bg-sky-100 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-900/50 hover:bg-sky-200 dark:hover:bg-sky-900/50',
     indigo: 'bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-200 dark:hover:bg-indigo-900/50',
+    green:'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-900/50 hover:bg-green-200 dark:hover:bg-green-900/50',
   }
 
   return (

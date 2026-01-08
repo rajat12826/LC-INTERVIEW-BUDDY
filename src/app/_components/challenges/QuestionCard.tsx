@@ -169,7 +169,7 @@ const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
             {/* Solved Status Button */}
             <button
               onClick={() => markAsSolved(question.Question)}
-              className={`inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border-2 min-w-[100px] ${
+              className={`cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border-2 min-w-[100px] ${
                 solved
                   ? 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50 hover:bg-emerald-200 dark:hover:bg-emerald-900/50'
                   : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700'

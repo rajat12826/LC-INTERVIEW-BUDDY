@@ -24,9 +24,10 @@ export default clerkMiddleware(async (auth, req) => {
     try {
       const { data: userRecord, error } = await supabaseAdmin
         .from('lc_users')
-        .select('is_premium, is_main') // Select both columns
+        .select('*') // Select both columns
         .eq('clerk_user_id', userId)
         .single();
+// console.log(userRecord);
 
       if (error && error.code !== 'PGRST116') { 
         console.error("Middleware Supabase fetch error:", error);
@@ -41,24 +42,24 @@ export default clerkMiddleware(async (auth, req) => {
 
       // Handle /leetcode/premium specific protection (is_main check)
       if (isPremiumRoute(req)) {
-        if (!userRecord.is_main) {
-          console.log(`User ${userId} is not 'main'. Redirecting from premium route to /leetcode.`);
-          return NextResponse.redirect(new URL('/leetcode', req.url));
+        if (!userRecord.is_premium) {
+          // console.log(`User ${userId} is not 'main'. Redirecting from premium route to /leetcode.`);
+          return NextResponse.redirect(new URL('/subscription', req.url));
         }
         // If is_main is true, allow access to premium route
-        console.log(`User ${userId} is 'main'. Allowing access to premium route: ${pathname}`);
+        // console.log(`User ${userId} is 'main'. Allowing access to premium route: ${pathname}`);
         return NextResponse.next();
       }
 
       // Handle /leetcode (non-premium) routes (is_premium check)
       // This applies to any /leetcode route that is NOT /leetcode/premium
       if (!isPremiumRoute(req)) {
-        if (!userRecord.is_premium) {
-          console.log(`User ${userId} is not premium. Redirecting to subscription.`);
-          return NextResponse.redirect(new URL('/subscription', req.url));
-        }
+        // if (!userRecord.is_premium) {
+        //   console.log(`User ${userId} is not premium. Redirecting to subscription.`);
+        //   return NextResponse.redirect(new URL('/subscription', req.url));
+        // }
         // If is_premium is true, allow access to regular leetcode route
-        console.log(`User ${userId} is premium. Allowing access to ${pathname}`);
+        // console.log(`User ${userId} is premium. Allowing access to ${pathname}`);
         return NextResponse.next();
       }
 

@@ -1,22 +1,25 @@
 "use client"
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Code, Menu, X, Zap, Calendar, User, Shuffle, Star } from 'lucide-react'
 
-import { UserButton } from '@clerk/nextjs'
+import { UserButton, useUser } from '@clerk/nextjs'
 import CustomDarkModeToggle from './CustomDarkModeToggle'
 import AnimatedDarkModeToggle from './AnimatedDarkModeToggle'
+import { supabase } from '@/lib/supabase'
+
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
   }
 
   const navigationItems = [
-    { href: "/leetcode/premium", label: "Premium", icon: Star},
+    { href:"/leetcode/premium", label: "Premium", icon: Star},
     { href: "/leetcode/random", label: "Random", icon: Shuffle },
     { href: "/leetcode/daily", label: "Daily", icon: Calendar },
     { href: "/leetcode/profile", label: "Profile", icon: User },
@@ -58,6 +61,7 @@ export default function Navbar() {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
+           
             {navigationItems.map((item) => {
               const Icon = item.icon
               return (
@@ -137,7 +141,9 @@ export default function Navbar() {
             </div>
 
             {/* Navigation Links */}
+           
             <div className="space-y-1">
+             
               {navigationItems.map((item) => {
                 const Icon = item.icon
                 return (

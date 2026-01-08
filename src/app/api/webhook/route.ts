@@ -101,17 +101,17 @@ export async function POST(request: Request) {
               paymentDate: new Date().toLocaleDateString(),
             },
           });
-          console.log(`Welcome email sent successfully to: ${customerEmail}`);
+          // console.log(`Welcome email sent successfully to: ${customerEmail}`);
         } catch (emailError) {
-          console.error(`Failed to send welcome email to ${customerEmail}:`, emailError);
+          // console.error(`Failed to send welcome email to ${customerEmail}:`, emailError);
           // Don't throw here - we don't want email failures to break the webhook
         }
 
       } else {
-        console.warn("Customer email not found in payment data. Cannot update user or send email.");
+        // console.warn("Customer email not found in payment data. Cannot update user or send email.");
       }
     } else {
-      console.log(`Ignoring webhook: Type=${payload.type}, Payload Type=${payload.data.payload_type}`);
+      // console.log(`Ignoring webhook: Type=${payload.type}, Payload Type=${payload.data.payload_type}`);
     }
 
     return NextResponse.json(
@@ -198,7 +198,7 @@ async function updateUserPremiumStatus(
       .eq('clerk_user_id', clerkUser.id);
 
     if (updateError) {
-      console.error("Error updating Supabase record:", updateError);
+      // console.error("Error updating Supabase record:", updateError);
       throw updateError;
     } else {
       // console.log(`Updated Supabase record for ${normalizedEmail} (Clerk ID: ${clerkUser.id})`);
@@ -206,10 +206,10 @@ async function updateUserPremiumStatus(
 
     // Verify the update
     const updatedClerkUser = await clerkClient.users.getUser(clerkUser.id);
-    console.log("Verification - Clerk user publicMetadata after update:", updatedClerkUser.publicMetadata);
+    // console.log("Verification - Clerk user publicMetadata after update:", updatedClerkUser.publicMetadata);
 
   } catch (error) {
-    console.error(`Error in updateUserPremiumStatus for ${email}:`, error);
+    // console.error(`Error in updateUserPremiumStatus for ${email}:`, error);
     throw error;
   }
 }

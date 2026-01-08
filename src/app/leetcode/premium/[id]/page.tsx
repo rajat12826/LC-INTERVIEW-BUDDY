@@ -161,7 +161,7 @@ export default function AITutorPage() {
 
   // Monaco Editor states
   const [code, setCode] = useState('// Write your solution here...\n\n')
-  console.log(code);
+  // console.log(code);
   
   const [language, setLanguage] = useState('javascript')
   const [isEditorMinimized, setIsEditorMinimized] = useState(false)
@@ -326,7 +326,7 @@ console.log(solution());`
   const copyCodeToChat = useCallback(() => {
     try {
       const currentCode =  code ||editorRef.current?.getValue?.() 
-      console.log(currentCode);
+      // console.log(currentCode);
       
       if (currentCode.trim()) {
         setUserInput(`Here's my code:\n\`\`\`${language}\n${currentCode}\n\`\`\`\n\nCan you help me review this?`)
