@@ -21,6 +21,8 @@ function Layout({
               
                 const response = await fetch('/api/questions');
                 const responseP = await fetch('/api/premiumQ');
+                
+                
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -29,6 +31,7 @@ function Layout({
                 }
                 const data = await response.json(); // Parse the JSON response
                 const dataP = await responseP.json(); 
+                // console.log(dataP);
                 setQuestions(data);
                 setPQuestions(dataP) // Set questions in Zustand store
                 setRandomQuestion(); // Set random question after all questions are loaded

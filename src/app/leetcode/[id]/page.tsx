@@ -49,7 +49,7 @@ const {theme}=useTheme();
   const mobile = useMobile()
   
   const [question, setQuestion] = useState<Question | null>(null)
-  console.log(question);
+  // console.log(question);
   
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [userInput, setUserInput] = useState('')

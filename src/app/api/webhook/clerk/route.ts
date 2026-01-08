@@ -179,14 +179,14 @@ export async function POST(req: NextRequest) {
         .select();
 
       if (error) {
-        console.error('Error creating user in Supabase:', error);
+        // console.error('Error creating user in Supabase:', error);
         return new Response('Error creating user in database', { status: 500 });
       }
 
-      console.log('User created successfully in Supabase:', data);
+      // console.log('User created successfully in Supabase:', data);
       return new Response('User created successfully', { status: 200 });
     } catch (error) {
-      console.error('Error processing user.created webhook:', error);
+      // console.error('Error processing user.created webhook:', error);
       return new Response('Internal server error', { status: 500 });
     }
   }
@@ -216,14 +216,14 @@ export async function POST(req: NextRequest) {
         .select();
 
       if (error) {
-        console.error('Error updating user in Supabase:', error);
+        // console.error('Error updating user in Supabase:', error);
         return new Response('Error updating user in database', { status: 500 });
       }
 
-      console.log('User updated successfully in Supabase:', data);
+      // console.log('User updated successfully in Supabase:', data);
       return new Response('User updated successfully', { status: 200 });
     } catch (error) {
-      console.error('Error processing user.updated webhook:', error);
+      // console.error('Error processing user.updated webhook:', error);
       return new Response('Internal server error', { status: 500 });
     }
   }
@@ -242,7 +242,7 @@ export async function POST(req: NextRequest) {
         return new Response('Error deleting user from database', { status: 500 });
       }
 
-      console.log('User deleted successfully from Supabase');
+      // console.log('User deleted successfully from Supabase');
       return new Response('User deleted successfully', { status: 200 });
     } catch (error) {
       console.error('Error processing user.deleted webhook:', error);
@@ -337,8 +337,8 @@ export async function POST(req: NextRequest) {
           data: emailData,
         });
 
-        console.log(`Sign-in notification email sent successfully to: ${customerEmail}`);
-        console.log(`Device: ${deviceInfo.deviceType} | Browser: ${deviceInfo.browser} | OS: ${deviceInfo.os} | Location: ${location}`);
+        // console.log(`Sign-in notification email sent successfully to: ${customerEmail}`);
+        // console.log(`Device: ${deviceInfo.deviceType} | Browser: ${deviceInfo.browser} | OS: ${deviceInfo.os} | Location: ${location}`);
       } catch (emailError) {
         console.error(`Failed to send sign-in email to ${customerEmail}:`, emailError);
         // Don't fail the webhook if email fails - just log the error

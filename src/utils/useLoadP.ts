@@ -42,6 +42,8 @@ export default function useLoadPremiumProblems() {
 
     try {
       // Map the raw PQuestion data to the PremiumProblem format
+      // console.log(premiumQuestionsRaw);
+      
       const processedProblems: PremiumProblem[] = premiumQuestionsRaw.map((pQuestion) => ({
         id: getQuestionIdFromUrl(pQuestion.link), // Use the store's utility to get a clean ID
         title: pQuestion.title,
