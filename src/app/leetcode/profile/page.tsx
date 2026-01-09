@@ -32,11 +32,14 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { profile } from 'console';
+import Image from 'next/image';
 
 // Define types for LeetCode API responses
 interface LeetCodeProfile {
   username: string;
   profile: {
+    userAvatar?:string;
     realName: string;
     websites: string[];
     countryName: string | null;
@@ -367,10 +370,28 @@ export default function ProfilePage() {
             <div className="flex items-center gap-6">
               {/* Avatar with gradient ring */}
               <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-teal-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500 animate-pulse"></div>
-                <div className="relative h-20 w-20 rounded-full bg-gradient-to-br from-blue-400 to-teal-600 flex items-center justify-center text-white text-3xl font-bold shadow-xl">
-                  {userName.charAt(0).toUpperCase() || 'U'}
-                </div>
+          {
+  leetcodeProfile?.profile?.userAvatar ? (
+    <div className="relative h-20 w-20 rounded-full overflow-hidden">
+      <Image
+        src={leetcodeProfile.profile.userAvatar}
+        alt={userName?.charAt(0).toUpperCase() || 'U'}
+        width={80}
+        height={80}
+        className="rounded-full object-cover"
+        priority
+      />
+    </div>
+  ) : (
+    <div className="relative h-20 w-20">
+      <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-teal-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500 animate-pulse"></div>
+      <div className="relative h-20 w-20 rounded-full bg-gradient-to-br from-blue-400 to-teal-600 flex items-center justify-center text-white text-3xl font-bold shadow-xl">
+        {userName?.charAt(0).toUpperCase() || 'U'}
+      </div>
+    </div>
+  )
+}
+
               </div>
 
               <div>

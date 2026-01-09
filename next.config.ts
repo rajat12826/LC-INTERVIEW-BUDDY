@@ -4,6 +4,7 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 const nextConfig = {
+  
   experimental: {
     // Fixed: serverActions should be an object in newer Next.js versions
     serverActions: {
@@ -24,7 +25,7 @@ const nextConfig = {
   
   // Combine all image configurations
   images: {
-    domains: ['avatars.githubusercontent.com', 'res.cloudinary.com'],
+    domains: ['avatars.githubusercontent.com', 'res.cloudinary.com','assets.leetcode.com'],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
     // Add image optimization settings
