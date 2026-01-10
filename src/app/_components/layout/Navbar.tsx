@@ -1,13 +1,12 @@
 "use client"
-import { useEffect, useMemo, useState } from 'react'
+import {  useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Code, Menu, X, Zap, Calendar, User, Shuffle, Star } from 'lucide-react'
+import {  Menu, X, Calendar, User, Shuffle, Star, BookOpen } from 'lucide-react'
 
-import { UserButton, useUser } from '@clerk/nextjs'
-import CustomDarkModeToggle from './CustomDarkModeToggle'
+import { UserButton } from '@clerk/nextjs'
 import AnimatedDarkModeToggle from './AnimatedDarkModeToggle'
-import { supabase } from '@/lib/supabase'
+// import { supabase } from '@/lib/supabase'
 
 
 export default function Navbar() {
@@ -19,6 +18,9 @@ export default function Navbar() {
   }
 
   const navigationItems = [
+  
+{ href: "/leetcode", label: "Problems", icon: BookOpen },
+
     { href:"/leetcode/premium", label: "Premium", icon: Star},
     { href: "/leetcode/random", label: "Random", icon: Shuffle },
     { href: "/leetcode/daily", label: "Daily", icon: Calendar },
