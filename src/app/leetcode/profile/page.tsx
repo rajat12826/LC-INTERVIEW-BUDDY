@@ -257,6 +257,13 @@ export default function ProfilePage() {
           const errorData = await submissionsResponse.json();
           throw new Error(errorData.error || `Failed to fetch LeetCode submissions for ${leetcodeUsername}`);
         }
+           const response2=await fetch(`/api/leetcode-similar/two-sum?depth=2`,{
+        method:'GET',
+         headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      console.log(response2.json());
         const submissionsData: any = await submissionsResponse.json();
         setLeetcodeSubmissions(submissionsData?.submissions);
 
@@ -287,6 +294,8 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({ name: userName, leetcodeUsername }),
       });
+   
+      
 
       if (!response.ok) {
         const errorData = await response.json();

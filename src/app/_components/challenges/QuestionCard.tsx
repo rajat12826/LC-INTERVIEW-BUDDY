@@ -3,8 +3,9 @@
 import { FC, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowUpRight, ChevronDown, ChevronUp, Building2, Check, Circle, Sparkles } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, ChevronUp, Building2, Check, Circle, Sparkles, Zap } from 'lucide-react'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
+import SimilarQuestionsModal from './SimilarQuestionsModal'
 
 interface Question {
   Difficulty: string
@@ -17,6 +18,21 @@ interface Question {
 
 interface QuestionCardProps {
   question: Question
+}
+
+interface SimilarQuestion {
+  questionId?: string
+  questionFrontendId?: string
+  title: string
+  titleSlug: string
+  difficulty: string
+  likes?: number
+  dislikes?: number
+  topicTags?: Array<{ name: string; slug: string }>
+  stats?: string
+  _needsDetails?: boolean
+  _isLoading?: boolean
+  _isExpanded?: boolean
 }
 
 const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
@@ -32,10 +48,56 @@ const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
   
   const hasMoreCompanies = companyArray.length > 5
 
+  // Similar questions state
+  const [similarQuestions, setSimilarQuestions] = useState<SimilarQuestion[]>([])
+  const [isLoadingSimilar, setIsLoadingSimilar] = useState(false)
+  const [isFetchingInitial, setIsFetchingInitial] = useState(false)
+
   const handleAITutorClick = () => {
     const questionId = getQuestionIdFromUrl(question["Link of Question"])
     setCurrentQuestion(question)
     router.push(`/leetcode/${questionId}`)
+  }
+
+  // Extract titleSlug from LeetCode URL
+  const extractTitleSlug = (url: string): string => {
+    const match = url.match(/problems\/([^\/]+)/)
+    return match ? match[1] : ''
+  }
+
+  // Fetch similar questions (OPTIMIZED - fast mode)
+  const fetchSimilarQuestions = async () => {
+    const titleSlug = extractTitleSlug(question["Link of Question"])
+    
+    if (!titleSlug) {
+      console.error('Could not extract titleSlug from URL')
+      return
+    }
+
+    setIsFetchingInitial(true)
+    setIsLoadingSimilar(true)
+
+    try {
+      const response = await fetch(
+        `/api/leetcode-similar/${titleSlug}?depth=1`
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch similar questions')
+      }
+
+      const data = await response.json()
+      
+      // Get the similar problems array from optimized response
+      const allSimilar = data.problem?.similarProblems || []
+      setSimilarQuestions(allSimilar)
+    } catch (error) {
+      console.error('Error fetching similar questions:', error)
+      setSimilarQuestions([])
+    } finally {
+      setIsLoadingSimilar(false)
+      setIsFetchingInitial(false)
+    }
   }
 
   // Difficulty color mapping
@@ -189,16 +251,36 @@ const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
             </button>
           </div>
 
-          {/* View Problem Link */}
-          <Link
-            href={question['Link of Question']}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group/link inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition-all duration-200 border border-zinc-200 dark:border-zinc-700"
-          >
-            <span>View on LeetCode</span>
-            <ArrowUpRight className="w-4 h-4 group-hover/link:tranzinc-x-0.5 group-hover/link:-tranzinc-y-0.5 transition-transform duration-300" />
-          </Link>
+          {/* Secondary actions row */}
+          <div className="flex items-center gap-3 cursor-pointer">
+            {/* Find Similar Button - Uses Dialog now */}
+            <SimilarQuestionsModal
+              questionTitle={question.Question}
+              similarQuestions={similarQuestions}
+              isLoading={isLoadingSimilar}
+              trigger={
+                <button
+                  onClick={fetchSimilarQuestions}
+                  disabled={isFetchingInitial}
+                  className="cursor-pointer group/similar flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-teal-700 dark:text-teal-300 bg-gradient-to-r from-teal-50 to-sky-50 dark:from-teal-950/30 dark:to-sky-950/30 hover:from-teal-100 hover:to-sky-100 dark:hover:from-teal-900/50 dark:hover:to-sky-900/50 rounded-xl transition-all duration-200 border-2 border-teal-200 dark:border-teal-900/50 hover:border-teal-300 dark:hover:border-teal-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Zap className={`w-4 h-4 ${isFetchingInitial ? 'animate-spin' : 'group-hover/similar:animate-pulse'}`} />
+                  <span>{isFetchingInitial ? 'Loading...' : 'Find Similar'}</span>
+                </button>
+              }
+            />
+
+            {/* View Problem Link */}
+            <Link
+              href={question['Link of Question']}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group/link flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition-all duration-200 border border-zinc-200 dark:border-zinc-700"
+            >
+              <span>LeetCode</span>
+              <ArrowUpRight className="w-4 h-4 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform duration-300" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>
