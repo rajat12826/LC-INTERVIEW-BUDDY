@@ -1,6 +1,7 @@
 // app/api/leetcode/similar/[titleSlug]/route.ts
 
 import { NextResponse } from "next/server";
+import axios, { AxiosError } from "axios";
 
 // In-memory cache (use Redis for production)
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -51,23 +52,27 @@ async function getProblem(titleSlug: string): Promise<any> {
     }
   `;
 
-  const response = await fetch("https://leetcode.com/graphql", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Referer: "https://leetcode.com",
-    },
-    body: JSON.stringify({
+  const { data } = await axios.post<GraphQLResponse>(
+    "https://leetcode.com/graphql/",
+    {
       query,
       variables: { titleSlug },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch problem: ${titleSlug}`);
-  }
-
-  const data: GraphQLResponse = await response.json();
+      operationName: "questionData",
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Referer: `https://leetcode.com/problems/${titleSlug}/`,
+        Origin: "https://leetcode.com",
+        Accept: "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "x-csrftoken": "dummy",
+        Cookie: "csrftoken=dummy; LEETCODE_SESSION=",
+      },
+    }
+  );
 
   if (!data.data?.question) {
     throw new Error(`Problem not found: ${titleSlug}`);
@@ -85,9 +90,13 @@ async function getProblem(titleSlug: string): Promise<any> {
 }
 
 // Parse similar questions from JSON string
-function parseSimilarQuestions(problem: any): Array<{ titleSlug: string; title: string; difficulty: string }> {
+function parseSimilarQuestions(
+  problem: any
+): Array<{ titleSlug: string; title: string; difficulty: string }> {
   try {
-    const similar = problem.similarQuestions ? JSON.parse(problem.similarQuestions) : [];
+    const similar = problem.similarQuestions
+      ? JSON.parse(problem.similarQuestions)
+      : [];
     return similar;
   } catch {
     return [];
@@ -99,7 +108,7 @@ export async function GET(
   { params }: { params: { titleSlug: string } }
 ) {
   try {
-    const { titleSlug } = params;
+    const { titleSlug } = await params;
     const { searchParams } = new URL(request.url);
     const depth = parseInt(searchParams.get("depth") || "1", 10);
 
@@ -113,9 +122,11 @@ export async function GET(
     // OPTIMIZATION 1: Only depth 1 by default (no expensive BFS)
     if (depth > 1) {
       return NextResponse.json(
-        { 
-          error: "Deep search (depth > 1) is disabled for performance. Use depth=1 for fast results.",
-          suggestion: "Fetch depth 1, then lazy-load individual similar problems on demand"
+        {
+          error:
+            "Deep search (depth > 1) is disabled for performance. Use depth=1 for fast results.",
+          suggestion:
+            "Fetch depth 1, then lazy-load individual similar problems on demand",
         },
         { status: 400 }
       );
@@ -133,25 +144,26 @@ export async function GET(
       problem: {
         ...mainProblem,
         // Return ONLY the list of similar titleSlugs, not full details
-        similarProblems: similarList.map(s => ({
+        similarProblems: similarList.map((s) => ({
           titleSlug: s.titleSlug,
           title: s.title,
           difficulty: s.difficulty,
           // Mark as not loaded yet
-          _needsDetails: true
-        }))
+          _needsDetails: true,
+        })),
       },
       // Provide endpoint for lazy loading
-      lazyLoadEndpoint: `/api/leetcode/problem/{titleSlug}`
+      lazyLoadEndpoint: `/api/leetcode/problem/{titleSlug}`,
     };
 
     return NextResponse.json(response);
-
   } catch (err: any) {
     console.error("Similar problems fetch error:", err);
+    // Axios wraps HTTP errors — extract the real status if available
+    const status = err instanceof AxiosError ? (err.response?.status ?? 500) : 500;
     return NextResponse.json(
       { error: err.message || "Internal server error" },
-      { status: 500 }
+      { status }
     );
   }
 }

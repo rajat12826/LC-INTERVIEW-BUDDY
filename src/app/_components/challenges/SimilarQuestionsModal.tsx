@@ -1,6 +1,3 @@
-// app/_components/challenges/SimilarQuestionsModal.tsx
-// FINAL VERSION: Proper Dialog pattern + Generic AnimatedList + Distinctive UI
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -107,9 +104,9 @@ export default function SimilarQuestionsModal({
 
   const getDifficultyColor = (difficulty: string) => {
     const diff = difficulty?.toLowerCase()
-    if (diff === 'easy') return 'text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/30 border-teal-300 dark:border-teal-800'
-    if (diff === 'medium') return 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800'
-    return 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800'
+    if (diff === 'easy') return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+    if (diff === 'medium') return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60'
+    return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800/60'
   }
 
   const parseStats = (stats: string) => {
@@ -129,27 +126,27 @@ export default function SimilarQuestionsModal({
 
   // Render individual question card
   const renderQuestion = (similar: SimilarQuestion, index: number) => (
-    <div className="group relative border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl p-5 bg-white/50 dark:bg-zinc-900/30 backdrop-blur-sm hover:border-teal-400/50 dark:hover:border-teal-600/50 hover:shadow-xl hover:shadow-teal-500/10 dark:hover:shadow-teal-400/5 transition-all duration-500 hover:-translate-y-0.5">
-      {/* Subtle gradient background on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-teal-50/0 via-transparent to-sky-50/0 dark:from-teal-950/0 dark:to-sky-950/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl pointer-events-none" />
-      
-      <div className="relative flex items-start justify-between gap-4">
+    <div className="group border border-zinc-100 dark:border-zinc-800/70 rounded-xl p-4 bg-white dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all duration-200">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-teal-700 dark:group-hover:text-teal-400 transition-colors duration-300 mb-3 leading-snug">
+
+          {/* Title */}
+          <h3 className="text-[13.5px] font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors mb-2.5 leading-snug">
             {similar.title}
           </h3>
 
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className={`inline-flex px-2.5 py-0.5 text-[11px] font-bold rounded-md border tracking-wide uppercase ${getDifficultyColor(similar.difficulty)}`}>
+          <div className="flex flex-wrap items-center gap-2 mb-2.5">
+            {/* Difficulty badge */}
+            <span className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-md border ${getDifficultyColor(similar.difficulty)}`}>
               {similar.difficulty}
             </span>
 
-            {/* Show Details button when collapsed (either not loaded yet OR loaded but collapsed) */}
+            {/* Details toggle */}
             {!similar._isExpanded && (
               <button
                 onClick={() => toggleExpanded(index)}
                 disabled={similar._isLoading}
-                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-gradient-to-r from-teal-50 to-sky-50 dark:from-teal-950/30 dark:to-sky-950/30 text-teal-700 dark:text-teal-400 rounded-md hover:from-teal-100 hover:to-sky-100 dark:hover:from-teal-900/50 dark:hover:to-sky-900/50 border border-teal-200/50 dark:border-teal-800/50 disabled:opacity-50 transition-all duration-300"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-700/60 hover:border-zinc-400 dark:hover:border-zinc-500 rounded-md bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition-all duration-150"
               >
                 {similar._isLoading ? (
                   <>
@@ -159,54 +156,54 @@ export default function SimilarQuestionsModal({
                 ) : (
                   <>
                     <ChevronDown className="w-3 h-3" />
-                    <span className='cursor-pointer'>Details</span>
+                    <span>Details</span>
                   </>
                 )}
               </button>
             )}
           </div>
 
-          {/* Expanded details section - show when expanded */}
+          {/* Expanded details */}
           {similar._isExpanded && (
-            <div className="space-y-3 pt-2 border-t border-zinc-200/50 dark:border-zinc-800/50">
+            <div className="space-y-2.5 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/60">
               {/* Topic tags */}
               {similar.topicTags && similar.topicTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {similar.topicTags.slice(0, 5).map((tag) => (
                     <span
                       key={tag.slug}
-                      className="px-2.5 py-0.5 text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-400 rounded-md border border-zinc-200/50 dark:border-zinc-700/50"
+                      className="px-2 py-0.5 text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-400 rounded-md border border-zinc-200/60 dark:border-zinc-700/40"
                     >
                       {tag.name}
                     </span>
                   ))}
                   {similar.topicTags.length > 5 && (
-                    <span className="px-2.5 py-0.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-500">
-                      +{similar.topicTags.length - 5}
+                    <span className="px-2 py-0.5 text-[11px] text-zinc-400 dark:text-zinc-600">
+                      +{similar.topicTags.length - 5} more
                     </span>
                   )}
                 </div>
               )}
 
               {/* Stats */}
-              <div className="flex items-center gap-4 text-xs text-zinc-600 dark:text-zinc-400">
-                <span className="flex items-center gap-1.5">
-                  <ThumbsUp className="w-3.5 h-3.5 text-teal-600 dark:text-teal-500" />
-                  <span className="font-semibold tabular-nums">{similar.likes?.toLocaleString() || '0'}</span>
+              <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                <span className="flex items-center gap-1">
+                  <ThumbsUp className="w-3 h-3" />
+                  <span className="font-medium tabular-nums">{similar.likes?.toLocaleString() || '0'}</span>
                 </span>
-                <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                <span className="text-zinc-300 dark:text-zinc-700">·</span>
                 <span className="tabular-nums">
-                  <span className="font-semibold">{parseStats(similar.stats || '{}')}</span>
-                  <span className="ml-1 text-zinc-500 dark:text-zinc-500">accepted</span>
+                  <span className="font-medium">{parseStats(similar.stats || '{}')}</span>
+                  <span className="ml-1 text-zinc-400 dark:text-zinc-600">accepted</span>
                 </span>
               </div>
 
-              {/* Collapse button */}
+              {/* Collapse */}
               <button
                 onClick={() => toggleExpanded(index)}
-                className="cursor-pointer text-xs text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 font-medium transition-colors underline decoration-dotted underline-offset-2"
+                className="text-[11px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 font-medium transition-colors"
               >
-                Hide details
+                ↑ Hide details
               </button>
             </div>
           )}
@@ -217,10 +214,10 @@ export default function SimilarQuestionsModal({
           href={`https://leetcode.com/problems/${similar.titleSlug}/`}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 dark:from-teal-500 dark:to-teal-600 dark:hover:from-teal-600 dark:hover:to-teal-700 text-white text-sm font-bold rounded-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/40"
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-700 dark:hover:bg-white text-white dark:text-zinc-900 text-[12px] font-semibold rounded-lg transition-colors duration-150 shadow-sm"
         >
           <span>Solve</span>
-          <ExternalLink className="w-3.5 h-3.5" />
+          <ExternalLink className="w-3 h-3" />
         </a>
       </div>
     </div>
@@ -230,76 +227,62 @@ export default function SimilarQuestionsModal({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 text-white rounded-lg font-semibold shadow-lg shadow-teal-500/30">
+          <Button className="inline-flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-700 dark:hover:bg-white text-white dark:text-zinc-900 rounded-lg font-semibold text-sm shadow-sm transition-colors">
             <Sparkles className="w-4 h-4" />
             Similar Questions
           </Button>
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] p-0 overflow-hidden border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950">
-        {/* Header with gradient background */}
-        <div className="relative px-6 sm:px-8 pt-8 pb-6 border-b border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden">
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-100/40 via-sky-100/30 to-transparent dark:from-teal-950/30 dark:via-sky-950/20 dark:to-transparent" />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-teal-200/20 via-sky-200/10 to-transparent dark:from-teal-900/20 dark:via-sky-900/10 dark:to-transparent blur-3xl" />
-          
-          <div className="relative">
-            <DialogHeader>
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-100 to-sky-100 dark:from-teal-950/50 dark:to-sky-950/50 border border-teal-200/50 dark:border-teal-800/50 mb-4 w-fit">
-                <Sparkles className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
-                <span className="text-xs font-bold text-teal-800 dark:text-teal-300 tracking-wide uppercase">
-                  Similar Problems
-                </span>
-              </div>
-              
-              <DialogTitle className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white leading-tight mb-2">
-                Related to: <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-700 to-sky-700 dark:from-teal-400 dark:to-sky-400">{questionTitle}</span>
-              </DialogTitle>
-              
-              <DialogDescription className="text-sm text-zinc-600 dark:text-zinc-400">
-                Discovered <span className="font-bold text-zinc-900 dark:text-white">{similarQuestions.length}</span> related challenge{similarQuestions.length !== 1 ? 's' : ''} • Expand for detailed insights
-              </DialogDescription>
-            </DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[88vh] p-0 overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xl rounded-2xl">
 
-            {/* Search bar */}
-            <div className="relative mt-6">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500" />
-              <input
-                type="text"
-                placeholder="Search by title or topic..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl text-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 dark:focus:ring-teal-400/50 focus:border-teal-500/50 dark:focus:border-teal-400/50 transition-all"
-              />
+        {/* Header */}
+        <div className="px-6 pt-6 pb-5 border-b border-zinc-100 dark:border-zinc-800/80">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
+              <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 tracking-wide uppercase">
+                Similar Problems
+              </span>
             </div>
+
+            <DialogTitle className="text-xl font-bold text-zinc-900 dark:text-white leading-snug">
+              Related to:{' '}
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">{questionTitle}</span>
+            </DialogTitle>
+
+            <DialogDescription className="text-sm text-zinc-400 dark:text-zinc-500 mt-1">
+              {similarQuestions.length} challenge{similarQuestions.length !== 1 ? 's' : ''} found
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Search */}
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search by title or topic..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300 dark:focus:ring-zinc-700 transition-all"
+            />
           </div>
         </div>
 
-        {/* Body with AnimatedList */}
-        <div className="px-6 sm:px-8 py-6">
+        {/* Body */}
+        <div className="px-6 py-4">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="relative w-16 h-16 mb-6">
-                <div className="absolute inset-0 border-[3px] border-zinc-200 dark:border-zinc-800 rounded-full" />
-                <div className="absolute inset-0 border-[3px] border-transparent border-t-teal-600 dark:border-t-teal-400 rounded-full animate-spin" />
-              </div>
-              <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-400 animate-pulse">
-                Searching for similar challenges...
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <Loader2 className="w-6 h-6 text-zinc-400 dark:text-zinc-600 animate-spin" />
+              <p className="text-sm text-zinc-400 dark:text-zinc-600">
+                Finding similar challenges...
               </p>
             </div>
           ) : filteredQuestions.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-900 dark:to-zinc-800 mb-6 shadow-inner">
-                <Search className="w-8 h-8 text-zinc-400 dark:text-zinc-600" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-2">
-                No matches found
-              </h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Try a different search term or clear filters
-              </p>
+            <div className="text-center py-16">
+              <Search className="w-7 h-7 text-zinc-300 dark:text-zinc-700 mx-auto mb-3" />
+              <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">No matches found</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-600 mt-1">Try a different search term</p>
             </div>
           ) : (
             <AnimatedList
@@ -308,26 +291,26 @@ export default function SimilarQuestionsModal({
               showGradients={true}
               enableArrowNavigation={true}
               displayScrollbar={true}
-              containerClassName="max-h-[50vh]"
+              containerClassName="max-h-[48vh]"
               itemDelay={0.02}
             />
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 sm:px-8 py-5 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/30">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-              <span className="text-base">💡</span>
-              <span>Click <span className="font-semibold text-zinc-900 dark:text-white">Details</span> to expand problem information</span>
-            </p>
-            
-            <DialogClose asChild>
-              <Button className="w-full sm:w-auto bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-lg font-semibold shadow-lg">
-                Close
-              </Button>
-            </DialogClose>
-          </div>
+        <div className="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-4">
+          <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            Click <span className="font-semibold text-zinc-600 dark:text-zinc-400">Details</span> to expand
+          </p>
+
+          <DialogClose asChild>
+            <Button
+              variant="outline"
+              className="text-sm font-semibold rounded-lg border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+            >
+              Close
+            </Button>
+          </DialogClose>
         </div>
       </DialogContent>
     </Dialog>

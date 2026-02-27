@@ -46,6 +46,11 @@ currentPQuestion: null,
       setPremiumQuestions:(questions) => set({ premiumQuestions: questions }),
       markAsSolved: (questionTitle) => {
         set((state) => {
+          if(state.solvedQuestions.has(questionTitle)) {
+            const updated = new Set(state.solvedQuestions)
+            updated.delete(questionTitle)
+            return { solvedQuestions: updated }
+          }
           const updated = new Set(state.solvedQuestions)
           updated.add(questionTitle)
           return { solvedQuestions: updated }

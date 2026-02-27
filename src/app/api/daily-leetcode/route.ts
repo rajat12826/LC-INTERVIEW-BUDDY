@@ -1,5 +1,6 @@
 // src/app/api/daily-leetcode/route.ts
 import { NextResponse } from 'next/server';
+import axios, { AxiosError } from 'axios';
 
 const DAILY_LEETCODE_QUERY = `
   query dailyChallenge {
@@ -27,30 +28,21 @@ const DAILY_LEETCODE_QUERY = `
 
 export async function GET() {
   try {
-    const leetcodeApiUrl = 'https://leetcode.com/graphql';
+    const { data } = await axios.post(
+      'https://leetcode.com/graphql',
+      { query: DAILY_LEETCODE_QUERY },
+      {
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
 
-    const response = await fetch(leetcodeApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: DAILY_LEETCODE_QUERY,
-      }),
-    });
-    
-    if (!response.ok) {
-      console.error(`Error fetching daily LeetCode problem: ${response.status} ${response.statusText}`);
-      return NextResponse.json(
-        { error: 'Failed to fetch daily LeetCode problem from official API' },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
     return NextResponse.json(data.data.activeDailyCodingChallengeQuestion);
-  } catch (error) {
-    console.error('Server error fetching daily LeetCode problem:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    console.error('Server error fetching daily LeetCode problem:', err);
+    const status = err instanceof AxiosError ? (err.response?.status ?? 500) : 500;
+    return NextResponse.json(
+      { error: 'Failed to fetch daily LeetCode problem from official API' },
+      { status }
+    );
   }
 }
