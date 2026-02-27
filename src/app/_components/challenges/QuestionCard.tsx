@@ -221,7 +221,7 @@ const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
             {/* AI Tutor Button - Primary CTA */}
             <button
               onClick={handleAITutorClick}
-              className="group/btn relative flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-br from-zinc-900 to-zinc-800 dark:from-white dark:to-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"
+              className="group/btn relative flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-br from-zinc-900 to-zinc-800 dark:from-white dark:to-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl cursor-pointer"
             >
               <span className="absolute inset-0 w-full h-full bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
               <Sparkles className="w-4 h-4 relative z-10" />
