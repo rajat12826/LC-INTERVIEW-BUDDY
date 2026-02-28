@@ -101,7 +101,7 @@ const dark = mounted ? resolvedTheme === "dark" : true;
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50 flex justify-center pointer-events-none">
+    <div className="fixed inset-x-0 top-0 z-50 flex justify-center pointer-events-none ">
 
       {/* Top accent shimmer line */}
       <div
