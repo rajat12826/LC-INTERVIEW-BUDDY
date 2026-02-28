@@ -22,7 +22,10 @@ export async function GET(
   { params }: { params: { username: string } }
 ) {
   try {
+   
+    
     const { username } = await params;
+     console.log(username);
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
 
@@ -50,10 +53,12 @@ export async function GET(
           Accept: "application/json",
           "Accept-Language": "en-US,en;q=0.9",
           "x-csrftoken": "dummy",
-          Cookie: "csrftoken=dummy; LEETCODE_SESSION=",
+          // Cookie: "csrftoken=dummy; LEETCODE_SESSION=",
         },
       }
     );
+    console.log(data);
+    
 
     const submissions = data?.data?.recentAcSubmissionList;
 
