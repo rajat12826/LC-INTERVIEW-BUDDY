@@ -1,119 +1,117 @@
-// app/your-path-to-challenges/page.tsx (Adjust path as per your project structure)
-
 'use client'
 
-import { useMemo, useState, useCallback } from 'react'
-import { useChallengeFilterStoreP } from '../../../utils/stores/useChallegeStoreP' // Use the new premium filter store
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
+import { useChallengeFilterStoreP } from '../../../utils/stores/useChallegeStoreP'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
-import PremiumQuestionCard from '@/app/_components/challenges/PremiumQuestionCard' // Use the new PremiumQuestionCard
+import PremiumQuestionCard from '@/app/_components/challenges/PremiumQuestionCard'
 import PremiumChallengeFilters from '@/app/_components/challenges/ChallegeFilterP'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, Sparkles, Crown } from 'lucide-react'
+import { ChevronDown, Crown, Flame, Target, Zap } from 'lucide-react'
 import DotGrid from '@/app/_components/DotGrid'
 
 type Example = {
-  input: string;
-  output: string | number;
-  explanation?: string;
-  image?: string;
-};
+  input: string
+  output: string | number
+  explanation?: string
+  image?: string
+}
 
 type PQuestion = {
-  title: string;
-  link: string;
-  difficulty: "Easy" | "Medium" | "Hard";
-  description: string;
-  steps?: string[];
-  illustration?: string;
-  note?: string;
-  key_points?: string[];
-  examples: Example[];
-  constraints: string[];
-};
+  title: string
+  link: string
+  difficulty: 'Easy' | 'Medium' | 'Hard'
+  description: string
+  steps?: string[]
+  illustration?: string
+  note?: string
+  key_points?: string[]
+  examples: Example[]
+  constraints: string[]
+}
 
-// Virtual scrolling hook - now typed for PQuestion[]
 function useVirtualScrolling(items: PQuestion[], itemsPerPage = 24) {
   const [currentPage, setCurrentPage] = useState(1)
 
   const paginatedItems = useMemo(() => {
-    const startIndex = 0
-    const endIndex = currentPage * itemsPerPage
-    return items.slice(startIndex, endIndex)
+    return items.slice(0, currentPage * itemsPerPage)
   }, [items, currentPage, itemsPerPage])
 
   const hasMore = currentPage * itemsPerPage < items.length
 
   const loadMore = useCallback(() => {
-    if (hasMore) {
-      setCurrentPage(prev => prev + 1)
-    }
+    if (hasMore) setCurrentPage(prev => prev + 1)
   }, [hasMore])
 
-  const reset = useCallback(() => {
-    setCurrentPage(1)
-  }, [])
+  const reset = useCallback(() => setCurrentPage(1), [])
 
   return { paginatedItems, hasMore, loadMore, reset }
 }
 
-export default function PremiumChallengesPage() {
-  // Get premiumQuestions from the store, which are of type PQuestion[]
-  const allPremiumQuestions = useQuestionStore((state) => state.premiumQuestions)
-  
-  // Use the new premium filter store
-  const { search, difficulty, solved, clearAll } = useChallengeFilterStoreP()
-  const isSolved = useQuestionStore((state) => state.isSolved)
+// ── Animated counter ──────────────────────────────────────────────────────────
+function AnimatedNumber({ value }: { value: number }) {
+  const [display, setDisplay] = useState(0)
+  const raf = useRef<number | null>(null)
+  const startRef = useRef<number | null>(null)
 
-  // Memoize filtered questions to avoid recalculating on every render
+  useEffect(() => {
+    startRef.current = null
+    const duration = 800
+    const from = display
+    const step = (ts: number) => {
+      if (startRef.current === null) startRef.current = ts
+      const p = Math.min((ts - startRef.current) / duration, 1)
+      const ease = 1 - Math.pow(1 - p, 3)
+      setDisplay(Math.round(from + (value - from) * ease))
+      if (p < 1) raf.current = requestAnimationFrame(step)
+    }
+    raf.current = requestAnimationFrame(step)
+    return () => {
+      if (raf.current !== null) cancelAnimationFrame(raf.current)
+    }
+  }, [value]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <>{display}</>
+}
+
+export default function PremiumChallengesPage() {
+  const allPremiumQuestions = useQuestionStore(s => s.premiumQuestions)
+  const { search, difficulty, solved, clearAll } = useChallengeFilterStoreP()
+  const isSolved = useQuestionStore(s => s.isSolved)
+
   const filteredQuestions = useMemo(() => {
     if (!allPremiumQuestions) return []
-    
-    return allPremiumQuestions.filter((q) => {
-      // Filter by title (PQuestion's 'title' field) or description
+    return allPremiumQuestions.filter(q => {
       const matchesSearch =
         search === '' ||
         q.title.toLowerCase().includes(search.toLowerCase()) ||
         q.description.toLowerCase().includes(search.toLowerCase())
-
-      // Filter by difficulty (matches PQuestion.difficulty casing)
       const matchesDifficulty =
         difficulty === '' || q.difficulty.toLowerCase() === difficulty.toLowerCase()
-
-      // Filter by solved status (using PQuestion.title as the unique identifier)
       const matchesSolved =
         solved === 'all' ||
         (solved === 'solved' && isSolved(q.title)) ||
         (solved === 'unsolved' && !isSolved(q.title))
-
-      return (
-        matchesSearch &&
-        matchesDifficulty &&
-        matchesSolved
-      )
+      return matchesSearch && matchesDifficulty && matchesSolved
     })
   }, [allPremiumQuestions, search, difficulty, solved, isSolved])
 
-  // Use virtual scrolling with PQuestion[]
   const { paginatedItems, hasMore, loadMore, reset } = useVirtualScrolling(filteredQuestions, 24)
+  useMemo(() => { reset() }, [filteredQuestions.length, reset])
 
-  // Reset pagination when filters change
-  useMemo(() => {
-    reset()
-  }, [filteredQuestions.length, reset])
-
-  // Memoize stats calculations - using PQuestion.difficulty
   const stats = useMemo(() => ({
     total: filteredQuestions.length,
-    easy: filteredQuestions.filter((c) => c.difficulty.toLowerCase() === 'easy').length,
-    medium: filteredQuestions.filter((c) => c.difficulty.toLowerCase() === 'medium').length,
-    hard: filteredQuestions.filter((c) => c.difficulty.toLowerCase() === 'hard').length,
+    easy: filteredQuestions.filter(c => c.difficulty.toLowerCase() === 'easy').length,
+    medium: filteredQuestions.filter(c => c.difficulty.toLowerCase() === 'medium').length,
+    hard: filteredQuestions.filter(c => c.difficulty.toLowerCase() === 'hard').length,
   }), [filteredQuestions])
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-500">
-      {/* Hero Section with DotGrid Background */}
-      <section className="relative py-20 overflow-hidden border-b border-zinc-200/60 dark:border-zinc-800/60">
-        {/* DotGrid Background */}
+    <div className="min-h-screen bg-zinc-50 dark:bg-[#050506] transition-colors duration-500 overflow-x-hidden">
+
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <section className="relative py-24 sm:py-32 overflow-hidden border-b border-zinc-200/60 dark:border-white/[0.06]">
+
+        {/* DotGrid */}
         <div className="absolute inset-0 z-0">
           <DotGrid
             dotSize={8}
@@ -128,193 +126,276 @@ export default function PremiumChallengesPage() {
           />
         </div>
 
-        {/* Atmospheric gradients */}
-        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-zinc-50/90 via-zinc-50/70 to-zinc-50/90 dark:from-zinc-950/90 dark:via-zinc-950/70 dark:to-zinc-950/90" />
-        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-amber-500/10 dark:bg-amber-400/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 right-1/3 w-96 h-96 bg-orange-500/10 dark:bg-orange-400/5 rounded-full blur-[120px]" />
+        {/* Layered atmosphere — dark mode */}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-zinc-50/95 via-zinc-50/80 to-zinc-50/95 dark:from-[#050506]/95 dark:via-[#050506]/80 dark:to-[#050506]/95" />
+
+        {/* Animated ambient blobs */}
+        <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full bg-amber-500/10 dark:bg-amber-500/[0.12] blur-[140px] animate-blob-float z-[2]" />
+        <div className="absolute bottom-[-5%] left-[10%] w-[600px] h-[400px] rounded-full bg-orange-500/8 dark:bg-orange-600/[0.08] blur-[120px] animate-blob-float-slow z-[2]" />
+        <div className="absolute top-[20%] right-[5%] w-[400px] h-[400px] rounded-full bg-yellow-500/6 dark:bg-yellow-500/[0.06] blur-[100px] animate-blob-float-slower z-[2]" />
+
+        {/* Noise texture overlay */}
+        <div className="absolute inset-0 z-[3] opacity-[0.015] dark:opacity-[0.03]"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`, backgroundSize: '256px' }} />
+
+        {/* Thin grid overlay */}
+        <div className="absolute inset-0 z-[3] opacity-[0.02] dark:opacity-[0.04]"
+          style={{ backgroundImage: `linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)`, backgroundSize: '64px 64px' }} />
 
         {/* Content */}
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-8">
-            {/* Eyebrow */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-400/10 dark:to-orange-400/10 border border-amber-500/20 dark:border-amber-400/20 backdrop-blur-xl">
-              <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <span className="text-sm font-semibold tracking-wide text-amber-700 dark:text-amber-300">
+          <div className="text-center space-y-10">
+
+            {/* Eyebrow badge */}
+            <div className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-full
+              bg-gradient-to-r from-amber-500/10 to-orange-500/10
+              dark:from-amber-500/[0.12] dark:to-orange-500/[0.08]
+              border border-amber-500/25 dark:border-amber-500/20
+              backdrop-blur-xl
+              shadow-[0_0_0_1px_rgba(245,158,11,0.1),0_4px_12px_rgba(245,158,11,0.08)]
+              dark:shadow-[0_0_0_1px_rgba(245,158,11,0.08),0_4px_24px_rgba(245,158,11,0.12)]`}>
+              <Crown className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="text-xs font-semibold tracking-[0.12em] uppercase text-amber-700 dark:text-amber-300">
                 Premium Problem Collection
               </span>
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
             </div>
 
-            {/* Main heading */}
-            <div className="space-y-5">
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]">
-                <span className="block text-zinc-900 dark:text-white">
+            {/* Headline */}
+            <div className="space-y-4">
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-[-0.03em] leading-[1.05]">
+                <span className="block text-zinc-900 dark:text-[#EDEDEF]">
                   Exclusive Premium
                 </span>
-                <span className="block bg-gradient-to-r from-amber-600 via-orange-600 to-yellow-600 dark:from-amber-400 dark:via-orange-400 dark:to-yellow-400 bg-clip-text text-transparent">
+                <span className={`block bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500
+                  dark:from-amber-400 dark:via-orange-400 dark:to-yellow-400
+                  bg-clip-text text-transparent
+                  [background-size:200%_auto] animate-shimmer`}>
                   Coding Challenges
                 </span>
               </h1>
-              
-              <p className="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto leading-relaxed">
-                <span className="font-semibold text-zinc-900 dark:text-white">{stats.total}</span> premium problems 
-                with detailed explanations and solutions
+
+              <p className="text-lg sm:text-xl text-zinc-600 dark:text-[#8A8F98] max-w-2xl mx-auto leading-relaxed">
+                <span className="font-semibold text-zinc-900 dark:text-[#EDEDEF]">
+                  <AnimatedNumber value={stats.total} />
+                </span>{' '}
+                premium problems with detailed explanations, illustrations, and step-by-step solutions
               </p>
             </div>
 
-            {/* Stats Cards - Improved spacing and alignment */}
-            <div className="inline-flex flex-wrap items-center justify-center gap-6 pt-2">
-              <StatBadge 
-                label="Easy" 
-                count={stats.easy} 
-                color="emerald"
-              />
-              <div className="hidden sm:block w-px h-12 bg-zinc-300/50 dark:bg-zinc-700/50" />
-              <StatBadge 
-                label="Medium" 
-                count={stats.medium} 
-                color="amber"
-              />
-              <div className="hidden sm:block w-px h-12 bg-zinc-300/50 dark:bg-zinc-700/50" />
-              <StatBadge 
-                label="Hard" 
-                count={stats.hard} 
-                color="rose"
-              />
+            {/* Stat pills */}
+            <div className="inline-flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+              <StatPill label="Easy" count={stats.easy} icon={<Zap className="w-3.5 h-3.5" />} color="emerald" />
+              <div className="hidden sm:block w-px h-10 bg-zinc-300/50 dark:bg-white/[0.06]" />
+              <StatPill label="Medium" count={stats.medium} icon={<Target className="w-3.5 h-3.5" />} color="amber" />
+              <div className="hidden sm:block w-px h-10 bg-zinc-300/50 dark:bg-white/[0.06]" />
+              <StatPill label="Hard" count={stats.hard} icon={<Flame className="w-3.5 h-3.5" />} color="rose" />
             </div>
           </div>
         </div>
+
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent z-[4]" />
       </section>
 
-      {/* Main Content */}
-      <div className="relative max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Filters Section */}
+      {/* ── MAIN CONTENT ─────────────────────────────────────────────────── */}
+      <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+
+        {/* Filters */}
         <div className="mb-10">
-          <div className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl rounded-3xl p-6 lg:p-8 border border-zinc-200/60 dark:border-zinc-800/60 shadow-xl shadow-zinc-200/50 dark:shadow-zinc-900/50">
-            <PremiumChallengeFilters />
+          <div className={`relative rounded-2xl overflow-hidden
+            bg-white/70 dark:bg-white/[0.03]
+            border border-zinc-200/60 dark:border-white/[0.06]
+            shadow-[0_2px_20px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)]
+            dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_4px_40px_rgba(0,0,0,0.4)]
+            backdrop-blur-xl`}>
+            {/* Subtle top glow line */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+            <div className="p-5 lg:p-7">
+              <PremiumChallengeFilters />
+            </div>
           </div>
         </div>
 
-        {/* Problems Grid */}
+        {/* Grid */}
         {paginatedItems.length > 0 ? (
           <>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {paginatedItems.map((question) => (
-                <PremiumQuestionCard key={question.title} question={question} />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 mb-14">
+              {paginatedItems.map((question, i) => (
+                <div
+                  key={question.title}
+                  className="animate-card-reveal"
+                  style={{ animationDelay: `${(i % 24) * 40}ms` }}
+                >
+                  <PremiumQuestionCard question={question} />
+                </div>
               ))}
             </div>
 
-            {/* Load More Button */}
             {hasMore && (
               <div className="text-center space-y-4">
                 <Button
                   onClick={loadMore}
                   size="lg"
-                  className="group inline-flex items-center gap-3 px-8 py-6 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl shadow-zinc-900/20 dark:shadow-white/20 hover:shadow-2xl hover:shadow-zinc-900/30 dark:hover:shadow-white/30"
+                  className={`group relative inline-flex items-center gap-2.5 px-8 py-6 rounded-xl overflow-hidden
+                    bg-gradient-to-b from-amber-500 to-orange-600
+                    hover:from-amber-400 hover:to-orange-500
+                    text-white font-semibold text-sm tracking-wide
+                    shadow-[0_0_0_1px_rgba(245,158,11,0.5),0_4px_12px_rgba(245,158,11,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]
+                    hover:shadow-[0_0_0_1px_rgba(245,158,11,0.6),0_8px_30px_rgba(245,158,11,0.35),inset_0_1px_0_rgba(255,255,255,0.2)]
+                    active:scale-[0.98]
+                    transition-all duration-200`}
                 >
+                  {/* Shine sweep */}
+                  <span className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                   <span>Load More Problems</span>
-                  <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform duration-300" />
+                  <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform duration-200" />
                 </Button>
-                
-                <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                  Showing {paginatedItems.length} of {filteredQuestions.length} problems
+                <p className="text-sm font-medium text-zinc-500 dark:text-[#8A8F98]">
+                  Showing{' '}
+                  <span className="text-zinc-900 dark:text-[#EDEDEF] font-semibold">{paginatedItems.length}</span>
+                  {' '}of{' '}
+                  <span className="text-zinc-900 dark:text-[#EDEDEF] font-semibold">{filteredQuestions.length}</span>
+                  {' '}problems
                 </p>
               </div>
             )}
           </>
         ) : (
-          /* Empty State */
-          <div className="py-20">
-            <div className="max-w-md mx-auto text-center">
-              <div className="relative mb-8">
-                {/* Animated background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 to-white dark:from-zinc-800 dark:to-zinc-900 rounded-3xl" />
-                <div className="absolute inset-[1px] bg-white dark:bg-zinc-900 rounded-3xl" />
-                
-                {/* Content */}
-                <div className="relative px-8 py-12 space-y-6">
-                  {/* Icon */}
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-800 dark:from-white dark:to-zinc-100 text-white dark:text-zinc-900 shadow-xl mx-auto">
-                    <svg
-                      className="w-10 h-10"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
-                  </div>
-
-                  {/* Text */}
-                  <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                      No Problems Found
-                    </h3>
-                    <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                      No challenges match your current filters. Try adjusting your search criteria to discover more problems.
-                    </p>
-                  </div>
-
-                  {/* Reset Button */}
-                  <Button
-                    onClick={clearAll}
-                    className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:scale-[1.02] transition-all duration-300"
-                  >
-                    Reset All Filters
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <EmptyState onReset={clearAll} />
         )}
+      </div>
+
+      <style jsx>{`
+        @keyframes blob-float {
+          0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+          50% { transform: translateY(-20px) rotate(1deg) scale(1.02); }
+        }
+        @keyframes blob-float-slow {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-30px) rotate(-1deg); }
+        }
+        @keyframes blob-float-slower {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          33% { transform: translateY(-15px) rotate(0.5deg); }
+          66% { transform: translateY(-25px) rotate(-0.5deg); }
+        }
+        @keyframes shimmer {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes card-reveal {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .animate-blob-float        { animation: blob-float 10s ease-in-out infinite; }
+        .animate-blob-float-slow   { animation: blob-float-slow 14s ease-in-out infinite; }
+        .animate-blob-float-slower { animation: blob-float-slower 18s ease-in-out infinite; }
+        .animate-shimmer           { animation: shimmer 4s ease infinite; background-size: 200% auto; }
+        .animate-card-reveal       { animation: card-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+      `}</style>
+    </div>
+  )
+}
+
+// ── Stat Pill ─────────────────────────────────────────────────────────────────
+function StatPill({ label, count, icon, color }: {
+  label: string
+  count: number
+  icon: React.ReactNode
+  color: 'emerald' | 'amber' | 'rose'
+}) {
+  const cfg = {
+    emerald: {
+      wrap:  'bg-emerald-50/80 dark:bg-emerald-500/[0.06] border-emerald-200/60 dark:border-emerald-500/[0.12]',
+      icon:  'bg-emerald-100 dark:bg-emerald-500/[0.12] text-emerald-600 dark:text-emerald-400',
+      count: 'text-emerald-700 dark:text-emerald-300',
+      label: 'text-emerald-600/80 dark:text-emerald-500',
+      dot:   'bg-emerald-500',
+    },
+    amber: {
+      wrap:  'bg-amber-50/80 dark:bg-amber-500/[0.06] border-amber-200/60 dark:border-amber-500/[0.12]',
+      icon:  'bg-amber-100 dark:bg-amber-500/[0.12] text-amber-600 dark:text-amber-400',
+      count: 'text-amber-700 dark:text-amber-300',
+      label: 'text-amber-600/80 dark:text-amber-500',
+      dot:   'bg-amber-500',
+    },
+    rose: {
+      wrap:  'bg-rose-50/80 dark:bg-rose-500/[0.06] border-rose-200/60 dark:border-rose-500/[0.12]',
+      icon:  'bg-rose-100 dark:bg-rose-500/[0.12] text-rose-600 dark:text-rose-400',
+      count: 'text-rose-700 dark:text-rose-300',
+      label: 'text-rose-600/80 dark:text-rose-500',
+      dot:   'bg-rose-500',
+    },
+  }[color]
+
+  return (
+    <div className={`inline-flex items-center gap-3 pl-2 pr-5 py-2 rounded-2xl border backdrop-blur-sm ${cfg.wrap}
+      shadow-[0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-none
+      transition-all duration-200 hover:scale-[1.02]`}>
+      <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${cfg.icon}`}>
+        {icon}
+      </div>
+      <div>
+        <div className={`text-2xl font-bold leading-none mb-0.5 ${cfg.count}`}>
+          <AnimatedNumber value={count} />
+        </div>
+        <div className={`text-[10px] font-bold uppercase tracking-[0.12em] ${cfg.label}`}>
+          {label}
+        </div>
       </div>
     </div>
   )
 }
 
-// Stat Badge Component - Improved design
-function StatBadge({ 
-  label, 
-  count, 
-  color 
-}: { 
-  label: string
-  count: number
-  color: 'emerald' | 'amber' | 'rose'
-}) {
-  const colorClasses = {
-    emerald: {
-      text: 'text-emerald-700 dark:text-emerald-400',
-      dot: 'bg-emerald-500',
-      bg: 'bg-emerald-50/50 dark:bg-emerald-950/30'
-    },
-    amber: {
-      text: 'text-amber-700 dark:text-amber-400',
-      dot: 'bg-amber-500',
-      bg: 'bg-amber-50/50 dark:bg-amber-950/30'
-    },
-    rose: {
-      text: 'text-rose-700 dark:text-rose-400',
-      dot: 'bg-rose-500',
-      bg: 'bg-rose-50/50 dark:bg-rose-950/30'
-    }
-  }
-
-  const config = colorClasses[color]
-
+// ── Empty State ───────────────────────────────────────────────────────────────
+function EmptyState({ onReset }: { onReset: () => void }) {
   return (
-    <div className={`inline-flex items-center gap-4 px-6 py-3 rounded-2xl ${config.bg} backdrop-blur-sm border border-zinc-200/60 dark:border-zinc-800/60`}>
-      <div className={`w-2 h-2 rounded-full ${config.dot} animate-pulse`} />
-      <div className="text-left">
-        <div className={`text-3xl font-bold ${config.text} leading-none mb-1`}>
-          {count}
-        </div>
-        <div className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">
-          {label}
+    <div className="py-24 flex flex-col items-center">
+      <div className="relative max-w-sm w-full">
+        {/* Glow behind card */}
+        <div className="absolute inset-0 rounded-3xl bg-amber-500/10 dark:bg-amber-500/[0.06] blur-[40px]" />
+
+        <div className="relative rounded-2xl overflow-hidden
+          bg-white/80 dark:bg-white/[0.03]
+          border border-zinc-200/60 dark:border-white/[0.06]
+          shadow-[0_2px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_8px_40px_rgba(0,0,0,0.5)]
+          backdrop-blur-xl">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+
+          <div className="px-8 py-12 text-center space-y-6">
+            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl
+              bg-gradient-to-br from-amber-500 to-orange-600
+              shadow-[0_0_0_1px_rgba(245,158,11,0.4),0_4px_20px_rgba(245,158,11,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]`}>
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-zinc-900 dark:text-[#EDEDEF] tracking-tight">
+                No Problems Found
+              </h3>
+              <p className="text-sm text-zinc-600 dark:text-[#8A8F98] leading-relaxed">
+                No challenges match your current filters. Try adjusting your search criteria.
+              </p>
+            </div>
+
+            <button
+              onClick={onReset}
+              className="w-full px-5 py-2.5 rounded-xl text-sm font-medium
+                bg-zinc-900 dark:bg-white/[0.06]
+                text-white dark:text-[#EDEDEF]
+                border border-transparent dark:border-white/[0.08]
+                hover:bg-zinc-800 dark:hover:bg-white/[0.10]
+                shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]
+                active:scale-[0.98]
+                transition-all duration-200"
+            >
+              Reset All Filters
+            </button>
+          </div>
         </div>
       </div>
     </div>

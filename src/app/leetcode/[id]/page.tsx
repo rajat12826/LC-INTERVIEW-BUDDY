@@ -20,6 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { useAutoResizeTextarea } from '@/hooks/use-auto-resize-textarea'
 import { cn } from '@/lib/utils'
+import ToggleButton from '@/app/_components/layout/AnimatedDarkModeToggle'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
@@ -702,6 +703,7 @@ Student's message: ${userInput}`
               <button onClick={() => setIsSidebarOpen(true)} className="xl:hidden p-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors" title="Quick Actions">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               </button>
+               <ToggleButton/>
               <a href={question['Link of Question']} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs sm:text-sm font-medium rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors">
                 <span className="hidden sm:inline">View Problem</span>
                 <span className="sm:hidden">View</span>

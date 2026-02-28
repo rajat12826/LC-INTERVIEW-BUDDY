@@ -1,6 +1,5 @@
 // app/profile/page.tsx
-// Redesigned with distinctive UI following Master Design System principles
-// Clean, bold, and memorable interface with React Bits-inspired components
+// Redesigned with Linear / Modern design system — matches random/daily AI tutor pages
 
 'use client';
 
@@ -8,38 +7,42 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-
-const DynamicDifficultyPieChart = dynamic(() => import('@/app/_components/charts/DifficultyPieChart'), {
-  ssr: false,
-  loading: () => <div className="w-full h-64 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900 animate-pulse" />,
-});
-
-const DynamicSubmissionBarChart = dynamic(() => import('@/app/_components/charts/SubmissionBarChart'), {
-  ssr: false,
-  loading: () => <div className="w-full h-64 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900 animate-pulse" />,
-});
-
-const DynamicSubmissionLineChart = dynamic(() => import('@/app/_components/charts/SubmissionLineChart'), {
-  ssr: false,
-  loading: () => <div className="w-full h-64 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900 animate-pulse" />,
-});
-
-// Shadcn UI Components
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { profile } from 'console';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '@/lib/utils';
+import {
+  User, Link2, Save, TrendingUp, BarChart2, Activity,
+  Award, CheckCircle2, AlertTriangle, Code2, ExternalLink,
+  ChevronRight, Loader2
+} from 'lucide-react';
 
-// Define types for LeetCode API responses
+import { Button }   from '@/components/ui/button';
+import { Input }    from '@/components/ui/input';
+import { Label }    from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+// ─── Lazy charts ─────────────────────────────────────────────────────────────
+
+const DynamicDifficultyPieChart = dynamic(
+  () => import('@/app/_components/charts/DifficultyPieChart'),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+const DynamicSubmissionBarChart = dynamic(
+  () => import('@/app/_components/charts/SubmissionBarChart'),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+const DynamicSubmissionLineChart = dynamic(
+  () => import('@/app/_components/charts/SubmissionLineChart'),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface LeetCodeProfile {
   username: string;
   profile: {
-    userAvatar?:string;
+    userAvatar?: string;
     realName: string;
     websites: string[];
     countryName: string | null;
@@ -50,7 +53,7 @@ interface LeetCodeProfile {
     ranking: number;
   };
   submitStats: {
-    acSubmissionNum: { difficulty: string; count: number; submissions: number }[];
+    acSubmissionNum:    { difficulty: string; count: number; submissions: number }[];
     totalSubmissionNum: { difficulty: string; count: number; submissions: number }[];
   };
 }
@@ -74,163 +77,227 @@ interface UserProfile {
   payment_status: string | null;
 }
 
-// Animated Grid Background Component
-const GridBackground = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden">
-    <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] dark:bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)]" />
-    <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[600px] w-[600px] rounded-full bg-blue-400/20 blur-[100px] dark:bg-blue-600/10" />
-  </div>
-);
+// ─── Small primitives ─────────────────────────────────────────────────────────
 
-// Animated Stat Card Component
-const StatCard = ({
-  value,
-  label,
-  icon,
-  color = "emerald",
-  delay = 0
+function ChartSkeleton() {
+  return (
+    <div className="w-full h-full rounded-xl bg-zinc-100 dark:bg-white/[0.03] animate-pulse" />
+  );
+}
+
+function Panel({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn(
+      'rounded-2xl overflow-hidden',
+      'bg-white dark:bg-[#0a0a0c]',
+      'border border-zinc-200/70 dark:border-white/[0.06]',
+      'shadow-[0_2px_24px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.02)]',
+      'dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_4px_40px_rgba(0,0,0,0.45)]',
+      className
+    )}>
+      {children}
+    </div>
+  );
+}
+
+function PanelHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className={`relative px-5 py-4 flex-shrink-0
+      bg-zinc-50/80 dark:bg-white/[0.02]
+      border-b border-zinc-200/70 dark:border-white/[0.06]`}>
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#5E6AD2]/30 to-transparent" />
+      {children}
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold text-zinc-400 dark:text-white/30 uppercase tracking-[0.14em] mb-3">
+      {children}
+    </p>
+  );
+}
+
+// ─── Difficulty badge ─────────────────────────────────────────────────────────
+
+function DifficultyBadge({ difficulty }: { difficulty: string }) {
+  const cfg = {
+    easy:   { bg: 'bg-emerald-100 dark:bg-emerald-500/[0.08]', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-500/20', dot: 'bg-emerald-500' },
+    medium: { bg: 'bg-amber-100 dark:bg-amber-500/[0.08]',     text: 'text-amber-700 dark:text-amber-400',     border: 'border-amber-200 dark:border-amber-500/20',   dot: 'bg-amber-500' },
+    hard:   { bg: 'bg-rose-100 dark:bg-rose-500/[0.08]',       text: 'text-rose-700 dark:text-rose-400',       border: 'border-rose-200 dark:border-rose-500/20',     dot: 'bg-rose-500' },
+  }[difficulty?.toLowerCase() ?? 'medium'] ?? {
+    bg: 'bg-zinc-100 dark:bg-white/[0.05]', text: 'text-zinc-600 dark:text-zinc-400',
+    border: 'border-zinc-200 dark:border-white/[0.08]', dot: 'bg-zinc-400'
+  };
+
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border', cfg.bg, cfg.text, cfg.border)}>
+      <span className={cn('w-1.5 h-1.5 rounded-full', cfg.dot)} />
+      {difficulty}
+    </span>
+  );
+}
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
+
+function StatCard({
+  value, label, icon, accent = false, delay = 0
 }: {
   value: string | number;
   label: string;
   icon: React.ReactNode;
-  color?: string;
+  accent?: boolean;
   delay?: number;
-}) => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  const colorClasses = {
-    emerald: "from-blue-500 to-teal-500 dark:from-blue-400 dark:to-teal-400",
-    amber: "from-amber-500 to-orange-500 dark:from-amber-400 dark:to-orange-400",
-    rose: "from-rose-500 to-pink-500 dark:from-rose-400 dark:to-pink-400",
-    violet: "from-violet-500 to-purple-500 dark:from-violet-400 dark:to-purple-400",
-  };
-
+}) {
   return (
-    <div
-      className={`group relative overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700/60 p-6 transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/5 ${isVisible ? 'opacity-100 tranzinc-y-0' : 'opacity-0 tranzinc-y-4'
-        }`}
-    >
-      {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent dark:from-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: delay / 1000, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        'rounded-2xl overflow-hidden group relative',
+        'bg-white dark:bg-[#0a0a0c]',
+        'border border-zinc-200/70 dark:border-white/[0.06]',
+        'shadow-[0_2px_16px_rgba(0,0,0,0.05)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_4px_24px_rgba(0,0,0,0.35)]',
+        'hover:shadow-[0_4px_24px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_0_0_1px_rgba(255,255,255,0.10),0_8px_40px_rgba(0,0,0,0.5),0_0_60px_rgba(94,106,210,0.08)]',
+        'transition-all duration-300 p-5'
+      )}>
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#5E6AD2]/25 to-transparent" />
 
-      <div className="relative flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium text-zinc-500 dark:text-[#8A8F98] mb-1.5 tracking-wide">
             {label}
           </p>
-          <p className="text-3xl font-bold bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-white dark:to-zinc-300 bg-clip-text text-transparent">
+          <p className={cn(
+            'text-2xl font-bold tracking-tight',
+            accent
+              ? 'bg-gradient-to-br from-[#5E6AD2] to-indigo-400 bg-clip-text text-transparent'
+              : 'text-zinc-900 dark:text-[#EDEDEF]'
+          )}>
             {value}
           </p>
         </div>
-        <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} shadow-lg`}>
-          {icon}
+        <div className={cn(
+          'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0',
+          'bg-[#5E6AD2]/[0.08] dark:bg-[#5E6AD2]/[0.10]',
+          'border border-[#5E6AD2]/[0.12] dark:border-[#5E6AD2]/[0.10]',
+          'group-hover:bg-[#5E6AD2]/[0.12] transition-colors duration-200'
+        )}>
+          <span className="text-[#5E6AD2] dark:text-indigo-400">{icon}</span>
         </div>
       </div>
-
-      {/* Animated border shimmer */}
-      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-    </div>
+    </motion.div>
   );
-};
+}
 
-// Animated Badge Component
-const AnimatedBadge = ({
-  children,
-  variant = "default"
-}: {
-  children: React.ReactNode;
-  variant?: "success" | "warning" | "error" | "default";
-}) => {
-  const variants = {
-    success: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800",
-    warning: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800",
-    error: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800",
-    default: "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
-  };
+// ─── Submission row ───────────────────────────────────────────────────────────
 
+function SubmissionRow({ submission, index }: { submission: LeetCodeSubmission; index: number }) {
+  const accepted = submission.statusDisplay === 'Accepted';
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-300 hover:scale-105 ${variants[variant]}`}>
-      {children}
-    </span>
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
+      className={`group flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl
+        bg-zinc-50/80 dark:bg-white/[0.02]
+        border border-zinc-200/60 dark:border-white/[0.05]
+        hover:border-zinc-300/70 dark:hover:border-white/[0.10]
+        hover:bg-zinc-100/60 dark:hover:bg-white/[0.04]
+        transition-all duration-150`}>
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={cn(
+          'w-1.5 h-1.5 rounded-full flex-shrink-0',
+          accepted ? 'bg-emerald-500' : 'bg-rose-500'
+        )} />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-zinc-800 dark:text-[#EDEDEF] truncate leading-tight">
+            {submission.title}
+          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={cn(
+              'text-[10px] font-semibold px-1.5 py-0.5 rounded',
+              accepted
+                ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/[0.08]'
+                : 'text-rose-700 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/[0.08]'
+            )}>
+              {submission.statusDisplay}
+            </span>
+            <span className="text-[10px] font-mono text-zinc-400 dark:text-white/30 bg-zinc-100 dark:bg-white/[0.04] px-1.5 py-0.5 rounded border border-zinc-200/50 dark:border-white/[0.05]">
+              {submission.lang}
+            </span>
+            <span className="text-[10px] text-zinc-400 dark:text-white/25">
+              {new Date(parseInt(submission.timestamp) * 1000).toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+      </div>
+      <a
+        href={`https://leetcode.com${submission.url}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold
+          text-[#5E6AD2] dark:text-indigo-400
+          bg-[#5E6AD2]/[0.07] dark:bg-[#5E6AD2]/[0.08]
+          border border-[#5E6AD2]/[0.12] dark:border-[#5E6AD2]/[0.10]
+          hover:bg-[#5E6AD2]/[0.12] dark:hover:bg-[#5E6AD2]/[0.14]
+          active:scale-[0.97] transition-all duration-150`}>
+        <ExternalLink className="w-3 h-3" />
+        View
+      </a>
+    </motion.div>
   );
-};
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
   const { user, isLoaded: isClerkLoaded, isSignedIn } = useUser();
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('charts');
+  const [activeTab, setActiveTab]   = useState('charts');
 
-  // Form states
-  const [userName, setUserName] = useState<string>('');
-  const [leetcodeUsername, setLeetcodeUsername] = useState<string>('');
-
-  // LeetCode data states
-  const [leetcodeProfile, setLeetcodeProfile] = useState<LeetCodeProfile | null>(null);
+  const [userName, setUserName]                       = useState('');
+  const [leetcodeUsername, setLeetcodeUsername]       = useState('');
+  const [leetcodeProfile, setLeetcodeProfile]         = useState<LeetCodeProfile | null>(null);
   const [leetcodeSubmissions, setLeetcodeSubmissions] = useState<LeetCodeSubmission[]>([]);
-  const [loadingLeetcode, setLoadingLeetcode] = useState(false);
-  const [leetcodeError, setLeetcodeError] = useState<string | null>(null);
+  const [loadingLeetcode, setLoadingLeetcode]         = useState(false);
+  const [leetcodeError, setLeetcodeError]             = useState<string | null>(null);
+  const [darkMode]                                    = useState(false); // charts compat
 
-  // State to track dark mode dynamically based on html class
-  const [darkMode, setDarkMode] = useState(false);
-
-  // Effect to listen for changes to the 'dark' class on the html element
-  // useEffect(() => {
-  //   const observer = new MutationObserver(() => {
-  //     setDarkMode(document.documentElement.classList.contains('dark'));
-  //   });
-
-  //   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-  //   setDarkMode(document.documentElement.classList.contains('dark'));
-
-  //   return () => observer.disconnect();
-  // }, []);
-
-  // Fetch user profile from Supabase on component mount
+  // ── Fetch user profile ───────────────────────────────────────────────────
   useEffect(() => {
     async function fetchUserProfile() {
-      if (!isClerkLoaded || !isSignedIn) {
-        setLoading(false);
-        return;
-      }
+      if (!isClerkLoaded || !isSignedIn) { setLoading(false); return; }
       setLoading(true);
-
       try {
-        const response = await fetch('/api/profile');
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('API Error fetching user profile:', errorData.error);
+        const res = await fetch('/api/profile');
+        if (!res.ok) {
+          const e = await res.json();
           setUserName(user?.firstName || user?.emailAddresses[0].emailAddress || '');
-          setLeetcodeUsername('');
-          setError(errorData.error || 'Failed to load profile data.');
+          setError(e.error || 'Failed to load profile data.');
         } else {
-          const data: UserProfile = await response.json();
+          const data: UserProfile = await res.json();
           setUserName(data.name || user?.firstName || user?.emailAddresses[0].emailAddress || '');
           setLeetcodeUsername(data.leetcode_username || '');
         }
       } catch (err: any) {
-        console.error('Network or unexpected error fetching user profile:', err);
-        setError(err.message || 'An unexpected error occurred while loading profile data.');
+        setError(err.message || 'Unexpected error loading profile.');
         setUserName(user?.firstName || user?.emailAddresses[0].emailAddress || '');
-        setLeetcodeUsername('');
       } finally {
         setLoading(false);
       }
     }
-
     fetchUserProfile();
   }, [isClerkLoaded, isSignedIn, user]);
 
-  // Fetch LeetCode data when leetcodeUsername changes
+  // ── Fetch LeetCode data ──────────────────────────────────────────────────
   useEffect(() => {
     async function fetchLeetcodeData() {
       if (!leetcodeUsername) {
@@ -239,30 +306,18 @@ export default function ProfilePage() {
         setLeetcodeError(null);
         return;
       }
-
       setLoadingLeetcode(true);
       setLeetcodeError(null);
-
       try {
-        const profileResponse = await fetch(`/api/leetcode-profile/${leetcodeUsername}`);
-        if (!profileResponse.ok) {
-          const errorData = await profileResponse.json();
-          throw new Error(errorData.error || `Failed to fetch LeetCode profile for ${leetcodeUsername}`);
-        }
-        const profileData: LeetCodeProfile = await profileResponse.json();
-        setLeetcodeProfile(profileData);
+        const pRes = await fetch(`/api/leetcode-profile/${leetcodeUsername}`);
+        if (!pRes.ok) throw new Error((await pRes.json()).error || 'Failed to fetch profile');
+        setLeetcodeProfile(await pRes.json());
 
-        const submissionsResponse = await fetch(`/api/leetcode-submissions/${leetcodeUsername}`);
-        if (!submissionsResponse.ok) {
-          const errorData = await submissionsResponse.json();
-          throw new Error(errorData.error || `Failed to fetch LeetCode submissions for ${leetcodeUsername}`);
-        }
-           
-        const submissionsData: any = await submissionsResponse.json();
-        setLeetcodeSubmissions(submissionsData?.submissions);
-
+        const sRes = await fetch(`/api/leetcode-submissions/${leetcodeUsername}`);
+        if (!sRes.ok) throw new Error((await sRes.json()).error || 'Failed to fetch submissions');
+        const sData: any = await sRes.json();
+        setLeetcodeSubmissions(sData?.submissions ?? []);
       } catch (err: any) {
-        console.error('Error fetching LeetCode data:', err);
         setLeetcodeError(err.message || 'Failed to load LeetCode data.');
         setLeetcodeProfile(null);
         setLeetcodeSubmissions([]);
@@ -270,7 +325,6 @@ export default function ProfilePage() {
         setLoadingLeetcode(false);
       }
     }
-
     fetchLeetcodeData();
   }, [leetcodeUsername]);
 
@@ -279,504 +333,630 @@ export default function ProfilePage() {
     setSaving(true);
     setError(null);
     setSuccessMessage(null);
-
     try {
-      const response = await fetch('/api/profile', {
+      const res = await fetch('/api/profile', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: userName, leetcodeUsername }),
       });
-   
-      
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update profile.');
-      }
-
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to update profile.');
       setSuccessMessage('Profile updated successfully!');
-
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      console.error('Error updating profile:', err);
-      setError(err.message || 'An unexpected error occurred during update.');
+      setError(err.message || 'Unexpected error during update.');
     } finally {
       setSaving(false);
     }
   };
 
-  // Prepare chart data
-  const difficultyData = leetcodeProfile?.submitStats.acSubmissionNum
+  // ── Derived chart data ───────────────────────────────────────────────────
+  const difficultyData = leetcodeProfile?.submitStats?.acSubmissionNum
     .filter(s => s.difficulty !== 'All')
     .map(stat => ({
-      name: stat.difficulty,
+      name:   stat.difficulty,
       solved: stat.count,
-      total: leetcodeProfile?.submitStats.totalSubmissionNum.find(t => t.difficulty === stat.difficulty)?.count || 0
+      total:  leetcodeProfile.submitStats?.totalSubmissionNum?.find(t => t.difficulty === stat.difficulty)?.count ?? 0,
     }));
 
   const pieChartData = difficultyData?.map(item => ({
-    name: item.name,
+    name:  item.name,
     value: item.solved,
-    color: item.name === 'Easy' ? '#10B981' : item.name === 'Medium' ? '#F59E0B' : '#EF4444'
+    color: item.name === 'Easy' ? '#10B981' : item.name === 'Medium' ? '#F59E0B' : '#EF4444',
   }));
 
   const submissionTrendMap = new Map<string, { date: string; total: number; accepted: number }>();
-
   if (Array.isArray(leetcodeSubmissions)) {
-    leetcodeSubmissions.forEach(submission => {
-      const date = new Date(parseInt(submission.timestamp) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (!submissionTrendMap.has(date)) {
-        submissionTrendMap.set(date, { date, total: 0, accepted: 0 });
-      }
+    leetcodeSubmissions.forEach(s => {
+      const date = new Date(parseInt(s.timestamp) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (!submissionTrendMap.has(date)) submissionTrendMap.set(date, { date, total: 0, accepted: 0 });
       const entry = submissionTrendMap.get(date)!;
       entry.total += 1;
-      if (submission.statusDisplay === 'Accepted') {
-        entry.accepted += 1;
-      }
+      if (s.statusDisplay === 'Accepted') entry.accepted += 1;
     });
   }
+  const submissionTrendData = Array.from(submissionTrendMap.values())
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const submissionTrendData = Array.from(submissionTrendMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const totalSolved     = leetcodeProfile?.submitStats?.acSubmissionNum?.find(s => s.difficulty === 'All')?.count ?? 0;
+  const totalSubmissions = leetcodeProfile?.submitStats?.totalSubmissionNum?.find(s => s.difficulty === 'All')?.count ?? 0;
+  const acceptanceRate  = totalSubmissions > 0 ? Math.round((totalSolved / totalSubmissions) * 100) : 0;
 
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (!isClerkLoaded || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-zinc-200 border-t-blue-500 dark:border-zinc-800 dark:border-t-blue-400 mb-6"></div>
-          <p className="text-lg font-medium text-zinc-700 dark:text-zinc-300">Loading your profile...</p>
+      <div className="min-h-screen bg-zinc-50 dark:bg-[#050506] flex items-center justify-center">
+        <div className="fixed inset-0 pointer-events-none hidden dark:block overflow-hidden">
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] rounded-full bg-[#5E6AD2]/[0.07] blur-[140px]" />
         </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col items-center gap-5"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 rounded-2xl bg-[#5E6AD2]/20 blur-[24px]" />
+            <div className={`relative w-14 h-14 rounded-2xl
+              bg-gradient-to-br from-[#5E6AD2] to-[#4B57C5]
+              shadow-[0_0_0_1px_rgba(94,106,210,0.4),0_4px_24px_rgba(94,106,210,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]
+              flex items-center justify-center`}>
+              <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-zinc-600 dark:text-[#8A8F98]">Loading your profile...</p>
+        </motion.div>
       </div>
     );
   }
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-rose-600 dark:text-rose-400">Please sign in to view your profile.</p>
-        </div>
+      <div className="min-h-screen bg-zinc-50 dark:bg-[#050506] flex items-center justify-center p-4">
+        <Panel className="max-w-sm w-full">
+          <div className="h-px bg-gradient-to-r from-transparent via-rose-500/30 to-transparent" />
+          <div className="p-8 text-center">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4
+              bg-gradient-to-br from-rose-500 to-red-600
+              shadow-[0_0_0_1px_rgba(239,68,68,0.3),0_4px_16px_rgba(239,68,68,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]`}>
+              <AlertTriangle className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF]">Sign in to view your profile</p>
+          </div>
+        </Panel>
       </div>
     );
   }
 
+  // ── Main render ──────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
-      <GridBackground />
+    <div className="min-h-screen bg-zinc-50 dark:bg-[#050506] flex flex-col">
 
-      {/* Hero Header */}
-      <div className="relative border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="flex items-center gap-6">
-              {/* Avatar with gradient ring */}
-              <div className="relative group">
-          {
-  leetcodeProfile?.profile?.userAvatar ? (
-    <div className="relative h-20 w-20 rounded-full overflow-hidden">
-      <Image
-        src={leetcodeProfile.profile.userAvatar}
-        alt={userName?.charAt(0).toUpperCase() || 'U'}
-        width={80}
-        height={80}
-        className="rounded-full object-cover"
-        priority
-      />
-    </div>
-  ) : (
-    <div className="relative h-20 w-20">
-      <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-teal-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500 animate-pulse"></div>
-      <div className="relative h-20 w-20 rounded-full bg-gradient-to-br from-blue-400 to-teal-600 flex items-center justify-center text-white text-3xl font-bold shadow-xl">
-        {userName?.charAt(0).toUpperCase() || 'U'}
+      {/* ── Background ─────────────────────────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className={`hidden dark:block absolute inset-0
+          bg-[radial-gradient(ellipse_at_top,#0a0a0f_0%,#050506_50%,#020203_100%)]`} />
+        <div className={`hidden dark:block absolute top-[-8%] left-1/2 -translate-x-[40%]
+          w-[900px] h-[500px] rounded-full bg-[#5E6AD2]/[0.08] blur-[150px] pf-blob-1`} />
+        <div className={`hidden dark:block absolute bottom-[5%] right-[2%]
+          w-[600px] h-[400px] rounded-full bg-indigo-600/[0.05] blur-[120px] pf-blob-2`} />
+        <div className={`hidden dark:block absolute top-[45%] left-[-5%]
+          w-[500px] h-[400px] rounded-full bg-violet-700/[0.04] blur-[100px] pf-blob-3`} />
+        <div className="absolute inset-0 opacity-[0.018] dark:opacity-[0.025]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: '256px',
+          }} />
+        <div className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(94,106,210,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(94,106,210,0.4) 1px, transparent 1px)`,
+            backgroundSize: '64px 64px',
+          }} />
       </div>
-    </div>
-  )
-}
 
+      {/* ── Hero header ────────────────────────────────────────────────── */}
+      <div className={`relative z-10 border-b border-zinc-200/70 dark:border-white/[0.06]
+        bg-white/80 dark:bg-[#050506]/80 backdrop-blur-xl flex-shrink-0`}>
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#5E6AD2]/12 to-transparent" />
+
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+
+            {/* Avatar + Name */}
+            <div className="flex items-center gap-5">
+              <div className="relative flex-shrink-0">
+                {leetcodeProfile?.profile?.userAvatar ? (
+                  <div className={`relative w-14 h-14 rounded-2xl overflow-hidden
+                    ring-2 ring-[#5E6AD2]/20 dark:ring-[#5E6AD2]/15
+                    shadow-[0_0_0_1px_rgba(94,106,210,0.25),0_4px_16px_rgba(94,106,210,0.15)]`}>
+                    <Image
+                      src={leetcodeProfile.profile.userAvatar}
+                      alt={userName?.charAt(0).toUpperCase() || 'U'}
+                      width={56} height={56}
+                      className="object-cover w-full h-full"
+                      priority
+                    />
+                  </div>
+                ) : (
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold
+                    bg-gradient-to-br from-[#5E6AD2] to-[#4B57C5]
+                    shadow-[0_0_0_1px_rgba(94,106,210,0.4),0_4px_20px_rgba(94,106,210,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]`}>
+                    {userName?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-[#050506] shadow-sm" />
               </div>
 
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-700 dark:from-white dark:via-zinc-100 dark:to-zinc-300 bg-clip-text text-transparent mb-2">
-                  {userName || 'Your Profile'}
-                </h1>
-                <p className="text-zinc-600 dark:text-zinc-400 font-medium">
-                  Manage your coding journey
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-[#EDEDEF]">
+                    {userName || 'Your Profile'}
+                  </h1>
+                  {leetcodeProfile && (
+                    <span className={`hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold
+                      bg-emerald-50 dark:bg-emerald-500/[0.06]
+                      text-emerald-700 dark:text-emerald-400
+                      border border-emerald-200/60 dark:border-emerald-500/[0.12]`}>
+                      <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                      Connected
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-zinc-500 dark:text-[#8A8F98]">
+                  {user?.emailAddresses[0].emailAddress}
                 </p>
               </div>
             </div>
 
+            {/* Global rank */}
             {leetcodeProfile && (
-              <div className="flex items-center gap-3">
-                <AnimatedBadge variant="success">
-                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
-                  Active
-                </AnimatedBadge>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+              <motion.div
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl
+                  bg-white dark:bg-[#0a0a0c]
+                  border border-zinc-200/70 dark:border-white/[0.06]
+                  shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_4px_24px_rgba(0,0,0,0.4)]`}>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0
+                  bg-[#5E6AD2]/[0.08] dark:bg-[#5E6AD2]/[0.10]
+                  border border-[#5E6AD2]/[0.12] dark:border-[#5E6AD2]/[0.10]`}>
+                  <Award className="w-4 h-4 text-[#5E6AD2] dark:text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 dark:text-[#8A8F98]">Global Rank</p>
+                  <p className="text-lg font-bold text-zinc-900 dark:text-[#EDEDEF] leading-tight tabular-nums">
                     #{leetcodeProfile.profile.ranking?.toLocaleString()}
                   </p>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400">Global Rank</p>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* ── Body ───────────────────────────────────────────────────────── */}
+      <main className="relative z-10 flex-1 max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
-          {/* Sidebar - Profile Settings */}
-          <div className="lg:col-span-4">
-            <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl shadow-xl shadow-zinc-200/50 dark:shadow-zinc-900/50">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-teal-600">
-                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+          {/* ── Sidebar ─────────────────────────────────────────────────── */}
+          <div className="lg:col-span-4 xl:col-span-3 space-y-5">
+
+            {/* Profile settings */}
+            <Panel>
+              <PanelHeader>
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center
+                    bg-[#5E6AD2]/[0.08] dark:bg-[#5E6AD2]/[0.10]
+                    border border-[#5E6AD2]/[0.12] dark:border-[#5E6AD2]/[0.10]`}>
+                    <User className="w-3.5 h-3.5 text-[#5E6AD2] dark:text-indigo-400" />
                   </div>
-                  Profile Settings
-                </CardTitle>
-              </CardHeader>
+                  <h2 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF] tracking-tight">
+                    Profile Settings
+                  </h2>
+                </div>
+              </PanelHeader>
 
-              <CardContent className="space-y-6">
-                {error && (
-                  <Alert variant="destructive" className="border-rose-200 dark:border-rose-800">
-                    <AlertTitle className="font-semibold">Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+              <div className="p-5 space-y-5">
+                {/* Alerts */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className={`flex items-start gap-3 p-3.5 rounded-xl
+                        bg-rose-50 dark:bg-rose-500/[0.06]
+                        border border-rose-200/70 dark:border-rose-500/[0.15]`}>
+                      <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-rose-700 dark:text-rose-300 leading-relaxed">{error}</p>
+                    </motion.div>
+                  )}
+                  {successMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className={`flex items-start gap-3 p-3.5 rounded-xl
+                        bg-emerald-50 dark:bg-emerald-500/[0.06]
+                        border border-emerald-200/70 dark:border-emerald-500/[0.15]`}>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-emerald-700 dark:text-emerald-300 leading-relaxed">{successMessage}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                {successMessage && (
-                  <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
-                    <AlertTitle className="font-semibold text-blue-900 dark:text-blue-100">Success</AlertTitle>
-                    <AlertDescription className="text-blue-800 dark:text-blue-200">{successMessage}</AlertDescription>
-                  </Alert>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Display name */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-zinc-500 dark:text-[#8A8F98] uppercase tracking-[0.08em]">
                       Display Name
                     </Label>
                     <Input
-                      type="text"
-                      id="name"
                       value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
+                      onChange={e => setUserName(e.target.value)}
                       placeholder="Enter your name"
-                      className="border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all"
+                      className={`bg-zinc-50 dark:bg-[#050506]
+                        border-zinc-200/70 dark:border-white/[0.08]
+                        text-zinc-900 dark:text-[#EDEDEF]
+                        placeholder:text-zinc-400 dark:placeholder:text-white/25
+                        focus-visible:ring-1 focus-visible:ring-[#5E6AD2]/50 focus-visible:border-[#5E6AD2]/50
+                        h-9 text-sm rounded-lg`}
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="leetcodeUsername" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  {/* LeetCode username */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-zinc-500 dark:text-[#8A8F98] uppercase tracking-[0.08em]">
                       LeetCode Username
                     </Label>
                     <div className="relative">
+                      <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 dark:text-white/25" />
                       <Input
-                        type="text"
-                        id="leetcodeUsername"
                         value={leetcodeUsername}
-                        onChange={(e) => setLeetcodeUsername(e.target.value)}
+                        onChange={e => setLeetcodeUsername(e.target.value)}
                         placeholder="your_leetcode_username"
-                        className="pl-10 border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all"
+                        className={`pl-9 bg-zinc-50 dark:bg-[#050506]
+                          border-zinc-200/70 dark:border-white/[0.08]
+                          text-zinc-900 dark:text-[#EDEDEF]
+                          placeholder:text-zinc-400 dark:placeholder:text-white/25
+                          focus-visible:ring-1 focus-visible:ring-[#5E6AD2]/50 focus-visible:border-[#5E6AD2]/50
+                          h-9 text-sm rounded-lg`}
                       />
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                      </div>
                     </div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
-                      Connect your LeetCode to track your progress
+                    <p className="text-[10px] text-zinc-400 dark:text-white/25 leading-relaxed">
+                      Connect LeetCode to unlock analytics
                     </p>
                   </div>
 
-                  <Button
+                  {/* Save button */}
+                  <button
                     type="submit"
                     disabled={saving}
-                    className="w-full bg-gradient-to-r from-blue-500 to-teal-600 hover:from-blue-600 hover:to-teal-700 text-white font-semibold py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  >
-                    {saving ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Saving...
-                      </span>
-                    ) : (
-                      'Save Changes'
-                    )}
-                  </Button>
+                    className={cn(
+                      'group relative w-full overflow-hidden rounded-lg px-4 py-2.5',
+                      'flex items-center justify-center gap-2 text-sm font-semibold',
+                      'bg-gradient-to-b from-[#5E6AD2] to-[#4B57C5] text-white',
+                      'shadow-[0_0_0_1px_rgba(94,106,210,0.5),0_2px_8px_rgba(94,106,210,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]',
+                      'hover:shadow-[0_0_0_1px_rgba(94,106,210,0.65),0_4px_16px_rgba(94,106,210,0.35),inset_0_1px_0_rgba(255,255,255,0.2)]',
+                      'active:scale-[0.97] active:shadow-none',
+                      'disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100',
+                      'transition-all duration-150'
+                    )}>
+                    <span className={`absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%]
+                      transition-transform duration-500
+                      bg-gradient-to-r from-transparent via-white/20 to-transparent`} />
+                    {saving
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                      : <><Save className="w-4 h-4" /> Save Changes</>
+                    }
+                  </button>
                 </form>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
+
+            {/* Quick stats sidebar tile (only when data loaded) */}
+            {leetcodeProfile && (
+              <Panel>
+                <div className="h-px bg-gradient-to-r from-transparent via-[#5E6AD2]/20 to-transparent" />
+                <div className="p-4">
+                  <SectionLabel>Difficulty Breakdown</SectionLabel>
+                  <div className="space-y-2">
+                    {difficultyData?.map(item => {
+                      const pct = item.total > 0 ? (item.solved / item.total) * 100 : 0;
+                      const color = item.name === 'Easy' ? 'bg-emerald-500' : item.name === 'Medium' ? 'bg-amber-500' : 'bg-rose-500';
+                      return (
+                        <div key={item.name}>
+                          <div className="flex items-center justify-between mb-1">
+                            <DifficultyBadge difficulty={item.name} />
+                            <span className="text-[11px] font-semibold tabular-nums text-zinc-700 dark:text-[#EDEDEF]">
+                              {item.solved} <span className="text-zinc-400 dark:text-white/25 font-normal">/ {item.total}</span>
+                            </span>
+                          </div>
+                          <div className="h-1 bg-zinc-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${pct}%` }}
+                              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                              className={cn('h-full rounded-full', color)}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </Panel>
+            )}
           </div>
 
-          {/* Main Content Area */}
-          <div className="lg:col-span-8 space-y-8">
-            {loadingLeetcode ? (
-              <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
-                <CardContent className="flex flex-col items-center justify-center h-64 p-12">
-                  <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-zinc-200 border-t-blue-500 dark:border-zinc-800 dark:border-t-blue-400 mb-6"></div>
-                  <p className="text-lg font-medium text-zinc-700 dark:text-zinc-300">Loading LeetCode data...</p>
-                </CardContent>
-              </Card>
-            ) : leetcodeError ? (
-              <Alert variant="destructive" className="border-rose-200 dark:border-rose-800 p-8">
-                <AlertTitle className="text-lg font-semibold mb-2">Unable to Load LeetCode Data</AlertTitle>
-                <AlertDescription className="text-zinc-700 dark:text-zinc-300">
-                  {leetcodeError}
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
-                    Please verify your username and ensure your profile is public.
-                  </p>
-                </AlertDescription>
-              </Alert>
-            ) : leetcodeProfile ? (
+          {/* ── Main content ─────────────────────────────────────────────── */}
+          <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+
+            {/* LeetCode loading */}
+            {loadingLeetcode && (
+              <Panel>
+                <div className="flex flex-col items-center justify-center py-16 gap-5">
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-2xl bg-[#5E6AD2]/20 blur-[20px]" />
+                    <div className={`relative w-12 h-12 rounded-2xl
+                      bg-gradient-to-br from-[#5E6AD2] to-[#4B57C5]
+                      shadow-[0_0_0_1px_rgba(94,106,210,0.4),0_4px_20px_rgba(94,106,210,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]
+                      flex items-center justify-center`}>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    </div>
+                  </div>
+                  <p className="text-sm text-zinc-500 dark:text-[#8A8F98]">Fetching LeetCode data...</p>
+                </div>
+              </Panel>
+            )}
+
+            {/* LeetCode error */}
+            {!loadingLeetcode && leetcodeError && (
+              <Panel>
+                <div className="h-px bg-gradient-to-r from-transparent via-rose-500/30 to-transparent" />
+                <div className="p-8 flex flex-col sm:flex-row items-start gap-5">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0
+                    bg-rose-50 dark:bg-rose-500/[0.08]
+                    border border-rose-200/60 dark:border-rose-500/[0.15]`}>
+                    <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF] mb-1">Unable to Load LeetCode Data</p>
+                    <p className="text-sm text-zinc-500 dark:text-[#8A8F98] leading-relaxed">{leetcodeError}</p>
+                    <p className="text-xs text-zinc-400 dark:text-white/30 mt-2">Verify the username and ensure your profile is public.</p>
+                  </div>
+                </div>
+              </Panel>
+            )}
+
+            {/* LeetCode data */}
+            {!loadingLeetcode && !leetcodeError && leetcodeProfile && (
               <>
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
                   <StatCard
-                    value={leetcodeProfile.submitStats.acSubmissionNum.find(s => s.difficulty === 'All')?.count || 0}
+                    value={totalSolved}
                     label="Problems Solved"
-                    color="emerald"
-                    delay={100}
-                    icon={
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    }
+                    icon={<CheckCircle2 className="w-4 h-4" />}
+                    delay={80}
                   />
-
                   <StatCard
-                    value={leetcodeProfile.submitStats.totalSubmissionNum.find(s => s.difficulty === 'All')?.count || 0}
+                    value={totalSubmissions}
                     label="Total Submissions"
-                    color="amber"
-                    delay={200}
-                    icon={
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                      </svg>
-                    }
+                    icon={<BarChart2 className="w-4 h-4" />}
+                    delay={160}
                   />
-
                   <StatCard
-                    value={leetcodeProfile.profile.reputation?.toLocaleString() || 'N/A'}
+                    value={leetcodeProfile.profile.reputation?.toLocaleString() ?? 'N/A'}
                     label="Reputation"
-                    color="violet"
-                    delay={300}
-                    icon={
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                      </svg>
-                    }
+                    icon={<Award className="w-4 h-4" />}
+                    delay={240}
                   />
-
                   <StatCard
-                    value={`${Math.round(((leetcodeProfile.submitStats.acSubmissionNum.find(s => s.difficulty === 'All')?.count || 0) / Math.max(leetcodeProfile.submitStats.totalSubmissionNum.find(s => s.difficulty === 'All')?.count || 1, 1)) * 100)}%`}
+                    value={`${acceptanceRate}%`}
                     label="Acceptance Rate"
-                    color="rose"
-                    delay={400}
-                    icon={
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                    }
+                    icon={<TrendingUp className="w-4 h-4" />}
+                    accent
+                    delay={320}
                   />
                 </div>
 
-                {/* Tabs for Charts/Submissions */}
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl border border-zinc-200/60 dark:border-zinc-800/60 p-1">
-                    <TabsTrigger
-                      value="charts"
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-teal-600 data-[state=active]:text-white font-semibold rounded-lg transition-all"
-                    >
-                      Analytics
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="submissions"
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-teal-600 data-[state=active]:text-white font-semibold rounded-lg transition-all"
-                    >
-                      Submissions
-                    </TabsTrigger>
-                  </TabsList>
+                {/* Tabs */}
+                <Panel>
+                  <PanelHeader>
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                      <TabsList className={`h-8 p-0.5 gap-0.5
+                        bg-zinc-100/80 dark:bg-white/[0.04]
+                        border border-zinc-200/60 dark:border-white/[0.06]
+                        rounded-lg`}>
+                        {[
+                          { value: 'charts',      label: 'Analytics',    icon: <Activity className="w-3 h-3" /> },
+                          { value: 'submissions', label: 'Submissions',  icon: <Code2 className="w-3 h-3" /> },
+                        ].map(tab => (
+                          <TabsTrigger
+                            key={tab.value}
+                            value={tab.value}
+                            className={cn(
+                              'flex items-center gap-1.5 px-3 h-7 text-xs font-semibold rounded-md transition-all duration-150',
+                              'text-zinc-500 dark:text-[#8A8F98]',
+                              'data-[state=active]:bg-white dark:data-[state=active]:bg-[#0a0a0c]',
+                              'data-[state=active]:text-zinc-900 dark:data-[state=active]:text-[#EDEDEF]',
+                              'data-[state=active]:shadow-[0_1px_4px_rgba(0,0,0,0.08)] dark:data-[state=active]:shadow-[0_0_0_1px_rgba(255,255,255,0.06)]'
+                            )}>
+                            {tab.icon}
+                            {tab.label}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
 
-                  <TabsContent value="charts" className="mt-8 space-y-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
-                        <CardHeader>
-                          <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                            Difficulty Distribution
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="h-64">
-                          {pieChartData && pieChartData.length > 0 ? (
-                            <DynamicDifficultyPieChart data={pieChartData} darkMode={darkMode} />
-                          ) : (
-                            <div className="flex items-center justify-center h-full text-zinc-500 dark:text-zinc-400">
-                              No data available
+                      {/* Analytics tab */}
+                      <TabsContent value="charts" className="mt-0">
+                        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                          {/* Pie chart */}
+                          <div className={`rounded-xl overflow-hidden
+                            bg-zinc-50/60 dark:bg-white/[0.02]
+                            border border-zinc-200/50 dark:border-white/[0.04] p-4`}>
+                            <div className="flex items-center gap-2 mb-4">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#5E6AD2] animate-pulse" />
+                              <p className="text-xs font-semibold text-zinc-600 dark:text-[#8A8F98] tracking-wide">
+                                Difficulty Distribution
+                              </p>
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
-                        <CardHeader>
-                          <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                            Submissions Overview
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="h-64">
-                          {difficultyData && difficultyData.length > 0 ? (
-                            <DynamicSubmissionBarChart data={difficultyData} darkMode={darkMode} />
-                          ) : (
-                            <div className="flex items-center justify-center h-full text-zinc-500 dark:text-zinc-400">
-                              No data available
+                            <div className="h-52">
+                              {pieChartData && pieChartData.length > 0
+                                ? <DynamicDifficultyPieChart data={pieChartData} darkMode={darkMode} />
+                                : <div className="flex items-center justify-center h-full text-xs text-zinc-400 dark:text-white/25">No data</div>
+                              }
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                          </div>
 
-                      {submissionTrendData.length > 0 && (
-                        <Card className="lg:col-span-2 border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
-                          <CardHeader>
-                            <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></div>
-                              Activity Trend
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="h-64">
-                            <DynamicSubmissionLineChart data={submissionTrendData} darkMode={darkMode} />
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  </TabsContent>
+                          {/* Bar chart */}
+                          <div className={`rounded-xl overflow-hidden
+                            bg-zinc-50/60 dark:bg-white/[0.02]
+                            border border-zinc-200/50 dark:border-white/[0.04] p-4`}>
+                            <div className="flex items-center gap-2 mb-4">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              <p className="text-xs font-semibold text-zinc-600 dark:text-[#8A8F98] tracking-wide">
+                                Submissions Overview
+                              </p>
+                            </div>
+                            <div className="h-52">
+                              {difficultyData && difficultyData.length > 0
+                                ? <DynamicSubmissionBarChart data={difficultyData} darkMode={darkMode} />
+                                : <div className="flex items-center justify-center h-full text-xs text-zinc-400 dark:text-white/25">No data</div>
+                              }
+                            </div>
+                          </div>
 
-                  <TabsContent value="submissions" className="mt-8">
-                    {leetcodeSubmissions.length > 0 ? (
-                      <Card className="border-zinc-200/60 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
-                        <CardHeader>
-                          <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white">
-                            Recent Activity
-                          </CardTitle>
-                          <CardDescription className="text-zinc-600 dark:text-zinc-400">
-                            Your latest {leetcodeSubmissions.slice(0, 10).length} submissions
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          {leetcodeSubmissions.slice(0, 10).map((submission, index) => (
-                            <div
-                              key={index}
-                              className="group flex items-center justify-between p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50/50 dark:bg-zinc-800/50 hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
-                            >
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-zinc-900 dark:text-white mb-2 truncate">
-                                  {submission.title}
-                                </h4>
-                                <div className="flex items-center gap-3 flex-wrap">
-                                  <AnimatedBadge variant={submission.statusDisplay === 'Accepted' ? 'success' : 'error'}>
-                                    {submission.statusDisplay}
-                                  </AnimatedBadge>
-                                  <AnimatedBadge variant="default">
-                                    {submission.lang}
-                                  </AnimatedBadge>
-                                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                                    {new Date(parseInt(submission.timestamp) * 1000).toLocaleDateString()}
-                                  </span>
-                                </div>
+                          {/* Line chart — full width */}
+                          {submissionTrendData.length > 0 && (
+                            <div className={`md:col-span-2 rounded-xl overflow-hidden
+                              bg-zinc-50/60 dark:bg-white/[0.02]
+                              border border-zinc-200/50 dark:border-white/[0.04] p-4`}>
+                              <div className="flex items-center gap-2 mb-4">
+                                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                                <p className="text-xs font-semibold text-zinc-600 dark:text-[#8A8F98] tracking-wide">
+                                  Activity Trend
+                                </p>
                               </div>
-
-                              <a
-                                href={`https://leetcode.com${submission.url}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ml-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-teal-600 hover:from-blue-600 hover:to-teal-700 text-white font-medium text-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                              >
-                                <span>View</span>
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                              </a>
+                              <div className="h-52">
+                                <DynamicSubmissionLineChart data={submissionTrendData} darkMode={darkMode} />
+                              </div>
                             </div>
-                          ))}
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <Alert className="border-zinc-200 dark:border-zinc-800 p-8">
-                        <AlertTitle className="text-lg font-semibold mb-2 text-zinc-900 dark:text-white">
-                          No Submissions Found
-                        </AlertTitle>
-                        <AlertDescription className="text-zinc-600 dark:text-zinc-400">
-                          No recent submissions found for "{leetcodeUsername}". Make sure your profile is public.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </TabsContent>
-                </Tabs>
+                          )}
+                        </div>
+                      </TabsContent>
+
+                      {/* Submissions tab */}
+                      <TabsContent value="submissions" className="mt-0">
+                        <div className="p-5">
+                          {leetcodeSubmissions.length > 0 ? (
+                            <>
+                              <div className="flex items-center justify-between mb-4">
+                                <SectionLabel>Recent Activity</SectionLabel>
+                                <span className="text-[10px] text-zinc-400 dark:text-white/25">
+                                  Latest {Math.min(leetcodeSubmissions.length, 10)} submissions
+                                </span>
+                              </div>
+                              <div className="space-y-2">
+                                {leetcodeSubmissions.slice(0, 10).map((s, i) => (
+                                  <SubmissionRow key={i} submission={s} index={i} />
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center py-12 gap-3">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center
+                                bg-zinc-100 dark:bg-white/[0.04]
+                                border border-zinc-200/60 dark:border-white/[0.06]`}>
+                                <Code2 className="w-5 h-5 text-zinc-400 dark:text-white/25" />
+                              </div>
+                              <p className="text-sm font-medium text-zinc-600 dark:text-[#8A8F98]">No submissions found</p>
+                              <p className="text-xs text-zinc-400 dark:text-white/25">
+                                Make sure your LeetCode profile is public
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </PanelHeader>
+                </Panel>
               </>
-            ) : leetcodeUsername ? (
-              <Alert className="border-zinc-200 dark:border-zinc-800 p-8">
-                <AlertTitle className="text-lg font-semibold mb-2 text-zinc-900 dark:text-white">
-                  No Data Found
-                </AlertTitle>
-                <AlertDescription className="text-zinc-600 dark:text-zinc-400">
-                  Could not find LeetCode profile for "{leetcodeUsername}". Please verify the username.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <Card className="border-blue-200/60 dark:border-blue-800/60 bg-gradient-to-br from-blue-50/50 to-teal-50/50 dark:from-blue-950/20 dark:to-teal-950/20 backdrop-blur-xl">
-                <CardContent className="text-center py-16 px-8">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-teal-600 mb-6 shadow-xl">
-                    <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+            )}
+
+            {/* No LeetCode connected prompt */}
+            {!loadingLeetcode && !leetcodeError && !leetcodeProfile && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <Panel>
+                  <div className="h-px bg-gradient-to-r from-transparent via-[#5E6AD2]/35 to-transparent" />
+                  <div className="p-10 sm:p-14 flex flex-col items-center text-center gap-6">
+                    {/* Icon */}
+                    <div className="relative">
+                      <div className="absolute inset-0 rounded-2xl bg-[#5E6AD2]/20 blur-[28px]" />
+                      <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center
+                        bg-gradient-to-br from-[#5E6AD2] to-[#4B57C5]
+                        shadow-[0_0_0_1px_rgba(94,106,210,0.4),0_6px_24px_rgba(94,106,210,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]`}>
+                        <Code2 className="w-7 h-7 text-white" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 max-w-sm">
+                      <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-[#EDEDEF]">
+                        Connect Your LeetCode
+                      </h3>
+                      <p className="text-sm text-zinc-500 dark:text-[#8A8F98] leading-relaxed">
+                        Link your account to unlock detailed analytics, track your progress, and visualize your coding journey.
+                      </p>
+                    </div>
+
+                    {/* Feature bullets */}
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      {[
+                        { icon: <BarChart2 className="w-3.5 h-3.5" />, label: 'Track Progress' },
+                        { icon: <Activity className="w-3.5 h-3.5" />,  label: 'View Analytics' },
+                        { icon: <TrendingUp className="w-3.5 h-3.5" />, label: 'Monitor Growth' },
+                      ].map(item => (
+                        <div key={item.label}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-full
+                            bg-[#5E6AD2]/[0.06] dark:bg-[#5E6AD2]/[0.08]
+                            border border-[#5E6AD2]/[0.10] dark:border-[#5E6AD2]/[0.10]
+                            text-[#5E6AD2] dark:text-indigo-400 text-xs font-medium`}>
+                          {item.icon}
+                          {item.label}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Arrow hint */}
+                    <div className="flex items-center gap-2 text-xs text-zinc-400 dark:text-white/25">
+                      <ChevronRight className="w-3.5 h-3.5" />
+                      Enter your username in Profile Settings to get started
+                    </div>
                   </div>
-
-                  <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-white mb-3">
-                    Connect Your LeetCode
-                  </CardTitle>
-
-                  <CardDescription className="text-zinc-600 dark:text-zinc-400 mb-8 max-w-md mx-auto">
-                    Link your LeetCode account to unlock detailed analytics, track your progress, and visualize your coding journey.
-                  </CardDescription>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm font-medium">
-                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      <span>Track Progress</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                      </svg>
-                      <span>View Analytics</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                      <span>Monitor Growth</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                </Panel>
+              </motion.div>
             )}
           </div>
         </div>
-      </div>
+      </main>
+
+      {/* ── Styles ─────────────────────────────────────────────────────── */}
+      <style jsx>{`
+        @keyframes pf-float-1 { 0%,100%{ transform:translateY(0px) rotate(0deg) scale(1); }    50%{ transform:translateY(-20px) rotate(1deg) scale(1.02); } }
+        @keyframes pf-float-2 { 0%,100%{ transform:translateY(0px) rotate(0deg); }              50%{ transform:translateY(-28px) rotate(-1deg); } }
+        @keyframes pf-float-3 { 0%,100%{ transform:translateY(0px); } 33%{ transform:translateY(-12px); } 66%{ transform:translateY(-22px); } }
+
+        .pf-blob-1 { animation: pf-float-1 14s ease-in-out infinite; }
+        .pf-blob-2 { animation: pf-float-2 18s ease-in-out infinite; }
+        .pf-blob-3 { animation: pf-float-3 22s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 }

@@ -1,25 +1,35 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { AnimatePresence, motion } from 'motion/react'
+import {
+  ArrowRight, Bot, Check, ChevronDown,
+  Zap, Target, Clock, AlertTriangle, Rocket, Lightbulb, X, Shuffle
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Textarea } from '@/components/ui/textarea'
+import { useAutoResizeTextarea } from '@/hooks/use-auto-resize-textarea'
+import { cn } from '@/lib/utils'
+import { chatSession } from '@/utils/GeminiAIModel'
+import { useQuestionStore } from '@/utils/stores/useQuestionStore'
+import ToggleButton from '@/app/_components/layout/AnimatedDarkModeToggle'
 
-import { chatSession } from '@/utils/GeminiAIModel' 
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-// Adjusted Question type to match the structure from the daily API response
 type Question = {
-  questionId: string;
-  questionFrontendId: string;
-  title: string; // Changed from Question to title
-  titleSlug: string;
-  difficulty: string;
-  content: string; // Added content field for problem description
-};
-
-// Adjusted DailyLeetCodeResponse type to match the API response structure
-interface DailyLeetCodeResponse {
-  date: string;
-  link: string; // This is the relative path, e.g., "/problems/maximum-erasure-value/"
-  question: Question;
+  title: string
+  difficulty: string
+  link: string
+  topics: string[]
+  companies: string[]
+  frequency: number
 }
 
 interface ChatMessage {
@@ -28,478 +38,1067 @@ interface ChatMessage {
   timestamp: Date
 }
 
-export default function AITutorPage() {
-  const router = useRouter()
-  
-  const [question, setQuestion] = useState<Question | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [userInput, setUserInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isTyping, setIsTyping] = useState(false)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [isInputFocused, setIsInputFocused] = useState(false)
-  const [dailyProblemLink, setDailyProblemLink] = useState<string | null>(null); // To store the full LeetCode URL
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+const AI_MODELS = ['Claude 4.5 Sonnet', 'GPT-5', 'GPT-5-mini', 'Gemini 3']
 
- 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+const TASK_SEQUENCES = [
+  {
+    status: 'Analyzing your question',
+    lines: ['Reading your message...', 'Understanding context...', 'Checking problem details...', 'Preparing response...', 'Finalizing answer...'],
+  },
+  {
+    status: 'Reviewing approach',
+    lines: ['Parsing algorithm logic...', 'Checking complexity...', 'Reviewing edge cases...', 'Generating feedback...', 'Finalizing review...'],
+  },
+  {
+    status: 'Crafting explanation',
+    lines: ['Building explanation...', 'Structuring concepts...', 'Adding examples...', 'Checking clarity...', 'Finalizing response...'],
+  },
+]
+
+const QUICK_ACTIONS = [
+  { icon: <Lightbulb className="w-3.5 h-3.5" />, text: 'Hint',         action: 'Can you give me a strategic hint to get started without spoiling the solution?' },
+  { icon: <Target className="w-3.5 h-3.5" />,    text: 'Approach',     action: "What's the best algorithmic approach for this problem? Walk me through the thinking." },
+  { icon: <Clock className="w-3.5 h-3.5" />,     text: 'Complexity',   action: 'What should the optimal time and space complexity be for this problem?' },
+  { icon: <AlertTriangle className="w-3.5 h-3.5" />, text: 'Edge Cases', action: 'What important edge cases should I consider and test for?' },
+  { icon: <Rocket className="w-3.5 h-3.5" />,    text: 'Optimize',     action: 'How can I optimize my current solution further?' },
+  { icon: <Zap className="w-3.5 h-3.5" />,       text: 'Walk-through', action: 'Can you walk me through the problem step by step without giving away the full solution?' },
+]
+
+// ─── Helper: map raw store entry → Question ───────────────────────────────────
+
+function mapRaw(raw: any): Question {
+  return {
+    title:      raw.Question ?? 'Untitled Problem',
+    difficulty: raw.Difficulty ?? 'Medium',
+    link:       raw['Link of Question'] ?? '',
+    topics:     (raw.Topics ?? '').split(',').map((t: string) => t.trim()).filter(Boolean),
+    companies:  (raw['Companies Asking This Question'] ?? '').split(',').map((c: string) => c.trim()).filter(Boolean),
+    frequency:  parseInt(raw['Frequency (Number of Companies)']) || 0,
+  }
+}
+
+function pickRandom(allQuestions: any[]): Question | null {
+  if (!allQuestions.length) return null
+  return mapRaw(allQuestions[Math.floor(Math.random() * allQuestions.length)])
+}
+
+// ─── Model Icons ──────────────────────────────────────────────────────────────
+
+const OpenAIIcon = () => (
+  <>
+    <svg className="block dark:hidden w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 256 260" xmlns="http://www.w3.org/2000/svg">
+      <path d="M239.184 106.203a64.716 64.716 0 0 0-5.576-53.103C219.452 28.459 191 15.784 163.213 21.74A65.586 65.586 0 0 0 52.096 45.22a64.716 64.716 0 0 0-43.23 31.36c-14.31 24.602-11.061 55.634 8.033 76.74a64.665 64.665 0 0 0 5.525 53.102c14.174 24.65 42.644 37.324 70.446 31.36a64.72 64.72 0 0 0 48.754 21.744c28.481.025 53.714-18.361 62.414-45.481a64.767 64.767 0 0 0 43.229-31.36c14.137-24.558 10.875-55.423-8.083-76.483Z" />
+    </svg>
+    <svg className="hidden dark:block w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 256 260" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#fff" d="M239.184 106.203a64.716 64.716 0 0 0-5.576-53.103C219.452 28.459 191 15.784 163.213 21.74A65.586 65.586 0 0 0 52.096 45.22a64.716 64.716 0 0 0-43.23 31.36c-14.31 24.602-11.061 55.634 8.033 76.74a64.665 64.665 0 0 0 5.525 53.102c14.174 24.65 42.644 37.324 70.446 31.36a64.72 64.72 0 0 0 48.754 21.744c28.481.025 53.714-18.361 62.414-45.481a64.767 64.767 0 0 0 43.229-31.36c14.137-24.558 10.875-55.423-8.083-76.483Z" />
+    </svg>
+  </>
+)
+
+const GeminiIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="gem-grad-rp" x1="0%" x2="68.73%" y1="100%" y2="30.395%">
+        <stop offset="0%" stopColor="#1C7DFF" />
+        <stop offset="52.021%" stopColor="#1C69FF" />
+        <stop offset="100%" stopColor="#F0DCD6" />
+      </linearGradient>
+    </defs>
+    <path d="M12 24A14.304 14.304 0 000 12 14.304 14.304 0 0012 0a14.305 14.305 0 0012 12 14.305 14.305 0 00-12 12" fill="url(#gem-grad-rp)" fillRule="nonzero" />
+  </svg>
+)
+
+const ClaudeIcon = () => (
+  <>
+    <svg className="block dark:hidden w-3.5 h-3.5 flex-shrink-0" fill="#000" fillRule="evenodd" viewBox="0 0 24 24">
+      <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z" />
+    </svg>
+    <svg className="hidden dark:block w-3.5 h-3.5 flex-shrink-0" fill="#fff" fillRule="evenodd" viewBox="0 0 24 24">
+      <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z" />
+    </svg>
+  </>
+)
+
+const MODEL_ICONS: Record<string, React.ReactNode> = {
+  'Claude 4.5 Sonnet': <ClaudeIcon />,
+  'GPT-5':             <OpenAIIcon />,
+  'GPT-5-mini':        <OpenAIIcon />,
+  'Gemini 3':          <GeminiIcon />,
+}
+
+// ─── AIIcon ───────────────────────────────────────────────────────────────────
+
+const AIIcon = ({ size = 'md' }: { size?: 'sm' | 'md' }) => (
+  <div className={cn(
+    'rounded-xl flex-shrink-0 flex items-center justify-center',
+    'bg-gradient-to-br from-[#5E6AD2] to-[#4B57C5]',
+    'shadow-[0_0_0_1px_rgba(94,106,210,0.35),0_2px_8px_rgba(94,106,210,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]',
+    size === 'sm' ? 'w-7 h-7' : 'w-8 h-8 sm:w-9 sm:h-9'
+  )}>
+    <svg
+      className={cn('text-white', size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4 sm:w-[18px] sm:h-[18px]')}
+      fill="none" stroke="currentColor" viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    </svg>
+  </div>
+)
+
+// ─── Panel primitives ─────────────────────────────────────────────────────────
+
+function Panel({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn(
+      'rounded-2xl overflow-hidden flex flex-col',
+      'bg-white dark:bg-[#0a0a0c]',
+      'border border-zinc-200/70 dark:border-white/[0.06]',
+      'shadow-[0_2px_24px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.02)]',
+      'dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_4px_40px_rgba(0,0,0,0.45)]',
+      className
+    )}>
+      {children}
+    </div>
+  )
+}
+
+function PanelHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className={`relative px-4 sm:px-5 py-3.5 sm:py-4 flex-shrink-0
+      bg-zinc-50/80 dark:bg-white/[0.02]
+      border-b border-zinc-200/70 dark:border-white/[0.06]`}>
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#5E6AD2]/30 to-transparent" />
+      {children}
+    </div>
+  )
+}
+
+// ─── AI Loading State ─────────────────────────────────────────────────────────
+
+function AILoadingState() {
+  const [seqIdx, setSeqIdx]       = useState(0)
+  const [lines, setLines]         = useState<Array<{ text: string; number: number }>>([])
+  const [scrollPos, setScrollPos] = useState(0)
+  const containerRef              = useRef<HTMLDivElement>(null)
+  const LH    = 28
+  const seq   = TASK_SEQUENCES[seqIdx]
+  const total = seq.lines.length
+
+  useEffect(() => {
+    setLines(seq.lines.slice(0, Math.min(5, total)).map((t, i) => ({ text: t, number: i + 1 })))
+    setScrollPos(0)
+  }, [seqIdx, seq.lines, total])
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      const firstIdx = Math.floor(scrollPos / LH)
+      const nextIdx  = (firstIdx + 3) % total
+      if (nextIdx < firstIdx && nextIdx !== 0) { setSeqIdx(p => (p + 1) % TASK_SEQUENCES.length); return }
+      if (nextIdx >= lines.length && nextIdx < total)
+        setLines(p => [...p, { text: seq.lines[nextIdx], number: nextIdx + 1 }])
+      setScrollPos(p => p + LH)
+    }, 1800)
+    return () => clearInterval(t)
+  }, [scrollPos, lines, total, seqIdx, seq.lines])
+
+  useEffect(() => {
+    if (containerRef.current) containerRef.current.scrollTop = scrollPos
+  }, [scrollPos])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="flex gap-2.5 sm:gap-3"
+    >
+      <AIIcon size="sm" />
+      <div className={`rounded-xl border border-zinc-200/60 dark:border-white/[0.06]
+        bg-zinc-50/80 dark:bg-white/[0.03] p-3 min-w-0
+        shadow-[0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-none`}>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex gap-[3px]">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="w-1 h-1 rounded-full bg-[#5E6AD2]"
+                style={{ animation: `rp-bounce 1.2s ease-in-out ${i * 0.15}s infinite` }} />
+            ))}
+          </div>
+          <span className="text-[11px] font-medium text-zinc-500 dark:text-[#8A8F98] tracking-wide">
+            {seq.status}...
+          </span>
+        </div>
+        <div className="relative">
+          <div ref={containerRef}
+            className="font-mono text-xs overflow-hidden w-full h-[56px] rounded-lg"
+            style={{ scrollBehavior: 'smooth' }}>
+            {lines.map(l => (
+              <div key={`${l.number}-${l.text}`} className="flex h-[28px] items-center px-2">
+                <span className="text-zinc-400/40 dark:text-white/20 pr-3 select-none w-6 text-right tabular-nums">
+                  {l.number}
+                </span>
+                <span className="text-zinc-600 dark:text-zinc-400 flex-1 ml-1">{l.text}</span>
+              </div>
+            ))}
+          </div>
+          <div className="absolute inset-0 pointer-events-none rounded-lg rp-code-fade" />
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── AI Prompt Input ──────────────────────────────────────────────────────────
+
+interface AIPromptInputProps {
+  value: string
+  onChange: (v: string) => void
+  onSend: () => void
+  isLoading: boolean
+  selectedModel: string
+  onModelChange: (m: string) => void
+}
+
+function AIPromptInput({ value, onChange, onSend, isLoading, selectedModel, onModelChange }: AIPromptInputProps) {
+  const { textareaRef, adjustHeight } = useAutoResizeTextarea({ minHeight: 68, maxHeight: 280 })
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      if (value.trim() && !isLoading) { onSend(); adjustHeight(true) }
+    }
   }
 
+  return (
+    <div className={`rounded-2xl overflow-hidden
+      bg-zinc-100/60 dark:bg-white/[0.04]
+      border border-zinc-200/70 dark:border-white/[0.07]
+      transition-all duration-200
+      focus-within:border-[#5E6AD2]/40 dark:focus-within:border-[#5E6AD2]/25
+      focus-within:shadow-[0_0_0_3px_rgba(94,106,210,0.08)]
+      dark:focus-within:shadow-[0_0_0_1px_rgba(94,106,210,0.15)]`}>
 
+      <div className="px-4 pt-3 pb-1.5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ClaudeIcon />
+          <span className="text-[11px] font-medium text-zinc-500 dark:text-[#8A8F98] tracking-tight">
+            Ask your AI tutor anything
+          </span>
+        </div>
+        <span className="hidden sm:block text-[10px] text-zinc-400 dark:text-white/25 font-mono">
+          Shift+Enter ↵
+        </span>
+      </div>
+
+      <div className="overflow-y-auto" style={{ maxHeight: '280px' }}>
+        <Textarea
+          ref={textareaRef}
+          value={value}
+          onChange={e => { onChange(e.target.value); adjustHeight() }}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask for a hint, explain your approach, or request a concept walkthrough..."
+          disabled={isLoading}
+          className={cn(
+            'w-full resize-none border-none rounded-none bg-transparent',
+            'px-4 py-2 min-h-[68px]',
+            'placeholder:text-zinc-400 dark:placeholder:text-white/25',
+            'text-zinc-900 dark:text-[#EDEDEF] text-sm leading-relaxed',
+            'focus-visible:ring-0 focus-visible:ring-offset-0',
+            'disabled:opacity-50'
+          )}
+        />
+      </div>
+
+      <div className={`flex items-center justify-between px-3 py-2
+        border-t border-zinc-200/50 dark:border-white/[0.04]
+        bg-zinc-50/60 dark:bg-white/[0.015]`}>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className={`flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs
+              hover:bg-zinc-200/60 dark:hover:bg-white/[0.06]
+              text-zinc-600 dark:text-[#8A8F98]
+              focus-visible:ring-1 focus-visible:ring-[#5E6AD2]/50 focus-visible:ring-offset-0`}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={selectedModel}
+                  className="flex items-center gap-1.5"
+                  initial={{ opacity: 0, y: -3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 3 }}
+                  transition={{ duration: 0.1 }}>
+                  {MODEL_ICONS[selectedModel]}
+                  <span className="hidden xs:inline font-medium">{selectedModel}</span>
+                  <ChevronDown className="h-2.5 w-2.5 opacity-40" />
+                </motion.div>
+              </AnimatePresence>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className={`min-w-[11rem]
+            border-zinc-200/60 dark:border-white/[0.08]
+            bg-white dark:bg-[#0a0a0c]
+            shadow-[0_8px_32px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)]
+            dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_8px_40px_rgba(0,0,0,0.5)]`}>
+            {AI_MODELS.map(model => (
+              <DropdownMenuItem
+                key={model}
+                className={`flex items-center justify-between gap-2
+                  text-zinc-700 dark:text-[#EDEDEF]
+                  hover:bg-zinc-100 dark:hover:bg-white/[0.06]
+                  focus:bg-zinc-100 dark:focus:bg-white/[0.06] cursor-pointer`}
+                onSelect={() => onModelChange(model)}>
+                <div className="flex items-center gap-2">
+                  {MODEL_ICONS[model] ?? <Bot className="h-3.5 w-3.5 opacity-40" />}
+                  <span className="text-sm">{model}</span>
+                </div>
+                {selectedModel === model && <Check className="h-3 w-3 text-[#5E6AD2]" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={!value.trim() || isLoading}
+          className={cn(
+            'group relative overflow-hidden rounded-lg px-3 py-1.5',
+            'flex items-center gap-1.5 text-xs font-semibold',
+            'bg-gradient-to-b from-[#5E6AD2] to-[#4B57C5] text-white',
+            'shadow-[0_0_0_1px_rgba(94,106,210,0.5),0_2px_8px_rgba(94,106,210,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]',
+            'hover:shadow-[0_0_0_1px_rgba(94,106,210,0.65),0_4px_16px_rgba(94,106,210,0.35),inset_0_1px_0_rgba(255,255,255,0.2)]',
+            'active:scale-[0.97] active:shadow-none',
+            'disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:scale-100',
+            'transition-all duration-150'
+          )}>
+          <span className={`absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%]
+            transition-transform duration-500
+            bg-gradient-to-r from-transparent via-white/20 to-transparent`} />
+          {isLoading
+            ? <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            : <><span>Send</span><ArrowRight className="h-3 w-3" /></>
+          }
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Difficulty badge ─────────────────────────────────────────────────────────
+
+function DifficultyBadge({ difficulty }: { difficulty: string }) {
+  const cfg = {
+    easy:   { bg: 'bg-emerald-100 dark:bg-emerald-500/[0.08]', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-500/20', dot: 'bg-emerald-500' },
+    medium: { bg: 'bg-amber-100 dark:bg-amber-500/[0.08]',     text: 'text-amber-700 dark:text-amber-400',     border: 'border-amber-200 dark:border-amber-500/20',   dot: 'bg-amber-500' },
+    hard:   { bg: 'bg-rose-100 dark:bg-rose-500/[0.08]',       text: 'text-rose-700 dark:text-rose-400',       border: 'border-rose-200 dark:border-rose-500/20',     dot: 'bg-rose-500' },
+  }[difficulty?.toLowerCase() ?? 'medium'] ?? {
+    bg: 'bg-zinc-100 dark:bg-white/[0.05]', text: 'text-zinc-600 dark:text-zinc-400',
+    border: 'border-zinc-200 dark:border-white/[0.08]', dot: 'bg-zinc-400'
+  }
+
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border', cfg.bg, cfg.text, cfg.border)}>
+      <span className={cn('w-1.5 h-1.5 rounded-full', cfg.dot)} />
+      {difficulty}
+    </span>
+  )
+}
+
+// ─── Message formatting ───────────────────────────────────────────────────────
+
+const CODE_BLOCK_HTML =
+  '<div class="my-3 rounded-xl border border-zinc-200/60 dark:border-white/[0.06] overflow-hidden">' +
+  '<div class="bg-zinc-100 dark:bg-white/[0.04] px-3.5 py-2 text-[11px] font-mono text-zinc-500 dark:text-[#8A8F98] border-b border-zinc-200/60 dark:border-white/[0.06] tracking-wide uppercase">$1</div>' +
+  '<pre class="bg-zinc-50 dark:bg-[#050506] p-4 overflow-x-auto m-0">' +
+  '<code class="text-xs text-zinc-800 dark:text-zinc-300 font-mono leading-relaxed">$2</code></pre></div>'
+
+function formatMessage(content: string): string {
+  return content
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-zinc-900 dark:text-[#EDEDEF]">$1</strong>')
+    .replace(/```(\w+)?\n([\s\S]*?)\n?```/g, CODE_BLOCK_HTML)
+    .replace(/`(.*?)`/g, '<code class="px-1.5 py-0.5 bg-zinc-100 dark:bg-white/[0.08] text-zinc-800 dark:text-zinc-200 rounded text-xs font-mono border border-zinc-200/50 dark:border-white/[0.06]">$1</code>')
+    .replace(/^• (.*$)/gim,
+      '<div class="flex items-start gap-2 mb-1.5">' +
+      '<span class="mt-[7px] w-1 h-1 rounded-full bg-[#5E6AD2]/50 flex-shrink-0"></span>' +
+      '<span class="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed">$1</span></div>'
+    )
+    .replace(/^(\d+)\. (.*$)/gim,
+      '<div class="flex items-start gap-2.5 mb-2">' +
+      '<span class="flex items-center justify-center min-w-[18px] h-[18px] rounded-md bg-[#5E6AD2]/10 dark:bg-[#5E6AD2]/[0.15] text-[#5E6AD2] text-[10px] font-bold border border-[#5E6AD2]/20 flex-shrink-0 mt-0.5">$1</span>' +
+      '<span class="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed">$2</span></div>'
+    )
+    .replace(/^> (.*$)/gim,
+      '<div class="border-l-2 border-[#5E6AD2]/40 bg-indigo-50/60 dark:bg-[#5E6AD2]/[0.05] pl-4 py-2.5 my-3 rounded-r-xl">' +
+      '<span class="text-zinc-700 dark:text-zinc-300 text-sm italic">$1</span></div>'
+    )
+}
+
+// ─── Message bubble ───────────────────────────────────────────────────────────
+
+function MessageBubble({ message }: { message: ChatMessage }) {
+  const isUser = message.role === 'user'
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      className={cn('flex gap-2.5 sm:gap-3', isUser ? 'justify-end' : 'justify-start')}
+    >
+      {!isUser && <AIIcon size="sm" />}
+
+      <div className={cn('max-w-[88%] sm:max-w-[82%]', isUser && 'order-1')}>
+        <div className={cn(
+          'px-3.5 py-3 sm:px-4 sm:py-3.5 rounded-2xl',
+          isUser
+            ? 'bg-gradient-to-br from-[#5E6AD2] to-[#4B57C5] text-white shadow-[0_0_0_1px_rgba(94,106,210,0.4),0_4px_16px_rgba(94,106,210,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]'
+            : 'bg-zinc-50/90 dark:bg-white/[0.03] border border-zinc-200/70 dark:border-white/[0.06] shadow-[0_1px_4px_rgba(0,0,0,0.05)] dark:shadow-none'
+        )}>
+          {isUser
+            ? <p className="text-sm leading-relaxed text-white whitespace-pre-wrap break-words">{message.content}</p>
+            : <div
+                className="text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 prose prose-sm dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }}
+              />
+          }
+          <p className={cn('text-[10px] mt-2 select-none tabular-nums', isUser ? 'text-indigo-200/70' : 'text-zinc-400 dark:text-white/25')}>
+            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+      </div>
+
+      {isUser && (
+        <div className={`w-7 h-7 rounded-xl bg-zinc-200 dark:bg-white/[0.08]
+          border border-zinc-300/50 dark:border-white/[0.08]
+          flex items-center justify-center flex-shrink-0`}>
+          <svg className="w-3.5 h-3.5 text-zinc-500 dark:text-[#8A8F98]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function RandomAITutorPage() {
+  const router = useRouter()
+
+  // ── Zustand store ──────────────────────────────────────────────────────────
+  const { allQuestions } = useQuestionStore()
+
+  const [question, setQuestion]           = useState<Question | null>(null)
+  const [messages, setMessages]           = useState<ChatMessage[]>([])
+  const [userInput, setUserInput]         = useState('')
+  const [isLoading, setIsLoading]         = useState(false)
+  const [isTyping, setIsTyping]           = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [selectedModel, setSelectedModel] = useState('Claude 4.5 Sonnet')
+
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
+
+  // ── Pick a new random question & reset chat ────────────────────────────────
+  const pickNewQuestion = useCallback(() => {
+    const q = pickRandom(allQuestions)
+    if (!q) return
+    setQuestion(q)
+    setUserInput('')
+    setMessages([{
+      role: 'assistant',
+      content:
+        `Welcome! I'm your AI tutor for this session.\n\n` +
+        `Today we're working on **"${q.title}"** — a **${q.difficulty}** level problem.\n\n` +
+        `**What I can help with:**\n` +
+        `• Understand the problem requirements deeply\n` +
+        `• Explore different algorithmic approaches\n` +
+        `• Analyze time & space complexity trade-offs\n` +
+        `• Identify and handle tricky edge cases\n` +
+        `• Review and optimize your solution\n\n` +
+        `Share your thoughts, ask for a hint, or tell me where you'd like to start!`,
+      timestamp: new Date(),
+    }])
+  }, [allQuestions])
+
+  // Pick on mount once store is loaded
   useEffect(() => {
-    async function fetchDailyQuestion() {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/daily-leetcode');
-        if (!response.ok) {
-          throw new Error('Failed to fetch daily LeetCode problem');
-        }
-        const data: DailyLeetCodeResponse = await response.json();
-        
-        const fullLink = `https://leetcode.com${data.link}`;
-        setDailyProblemLink(fullLink);
-
-        // Map the API response to our Question type for consistency
-        const fetchedQuestion: Question = {
-          questionId: data.question.questionId,
-          questionFrontendId: data.question.questionFrontendId,
-          title: data.question.title,
-          titleSlug: data.question.titleSlug,
-          difficulty: data.question.difficulty,
-          content: data.question.content, // Use the content from the API
-        };
-
-        setQuestion(fetchedQuestion);
-        
-        const welcomeMessage: ChatMessage = {
-          role: 'assistant',
-          content: `👋 Hello! I'm your AI coding mentor, ready to guide you through today's Daily LeetCode Problem: "${fetchedQuestion.title}". 
-
-This is a **${fetchedQuestion.difficulty}** level challenge.
-
-I'm here to help you:
-• 🧠 Understand the problem deeply
-• 💡 Explore different approaches
-• 🔍 Break down complex algorithms
-• 🚀 Optimize your solution
-
-What would you like to explore first?`,
-          timestamp: new Date()
-        }
-        setMessages([welcomeMessage])
-
-      } catch (error) {
-        console.error('Error fetching daily question:', error);
-        setQuestion(null); // Clear question on error
-        setMessages([{
-          role: 'assistant',
-          content: '⚠️ Failed to load the daily LeetCode problem. Please try refreshing the page.',
-          timestamp: new Date()
-        }]);
-      } finally {
-        setIsLoading(false);
-      }
+    if (allQuestions.length > 0 && !question) {
+      pickNewQuestion()
     }
+  }, [allQuestions, question, pickNewQuestion])
 
-    fetchDailyQuestion();
-  }, []); // Empty dependency array to fetch only once on mount
+  useEffect(() => { scrollToBottom() }, [messages, isTyping, scrollToBottom])
 
-  // Effect to scroll to bottom when messages update or typing status changes
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages, isTyping])
-
-  const sendMessage = async () => {
+  // ── Send message ───────────────────────────────────────────────────────────
+  const sendMessage = useCallback(async () => {
     if (!userInput.trim() || !question) return
-
-    const userMessage: ChatMessage = {
-      role: 'user',
-      content: userInput,
-      timestamp: new Date()
-    }
-
-    setMessages(prev => [...prev, userMessage])
+    const userMsg: ChatMessage = { role: 'user', content: userInput, timestamp: new Date() }
+    setMessages(prev => [...prev, userMsg])
     setUserInput('')
     setIsLoading(true)
     setIsTyping(true)
-
     try {
-      const context = `You are an expert AI tutor helping with the LeetCode problem "${question.title}". 
-      This is a ${question.difficulty} difficulty problem.
-      Problem content: ${question.content}
-      Problem URL: ${dailyProblemLink}
-      
-      Please provide helpful, educational responses that guide the student rather than giving away the complete solution immediately. 
-      Focus on explaining concepts, suggesting approaches, and helping them think through the problem.
-      
-      Use markdown formatting for better readability:
-      - Use **bold** for important concepts
-      - Use \`code\` for inline code
-      - Use numbered lists for step-by-step approaches
-      - Use bullet points for key insights
-      - Use > for important tips or warnings
-      
-      Keep responses engaging and encouraging. Use emojis sparingly but effectively.
-      
-      Previous conversation:
-      ${messages.map(m => `${m.role}: ${m.content}`).join('\n')}
-      
-      Student's question: ${userInput}`
-        console.log(context);
-        
+      const context =
+        `You are an expert AI tutor helping with the LeetCode problem "${question.title}".` +
+        `\nDifficulty: ${question.difficulty}` +
+        `\nTopics: ${question.topics.join(', ')}` +
+        `\nCompanies asking this: ${question.companies.slice(0, 5).join(', ')}` +
+        `\nProblem URL: ${question.link}` +
+        `\n\nGuide the student educationally without revealing the full solution immediately.` +
+        `\nExplain concepts, suggest approaches, help them think through the problem.` +
+        `\nFormat with markdown: **bold**, \`code\`, numbered lists, bullets, > tips.` +
+        `\n\nConversation so far:\n${messages.map(m => `${m.role}: ${m.content}`).join('\n')}` +
+        `\n\nStudent: ${userInput}`
+
       const result = await chatSession.sendMessage(context)
-      const response = result.response
-      const text = response.text()
-    
+      const text   = result.response.text()
       setTimeout(() => {
-        const assistantMessage: ChatMessage = {
-          role: 'assistant',
-          content: text,
-          timestamp: new Date()
-        }
-
-        setMessages(prev => [...prev, assistantMessage])
+        setMessages(prev => [...prev, { role: 'assistant', content: text, timestamp: new Date() }])
         setIsTyping(false)
-      }, 1000)
-
-    } catch (error) {
-      console.error('Error generating response:', error)
-      const errorMessage: ChatMessage = {
+      }, 400)
+    } catch {
+      setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ I encountered an error while processing your request. Please try again in a moment.',
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, errorMessage])
+        content: 'I encountered an error. Please try again.',
+        timestamp: new Date(),
+      }])
       setIsTyping(false)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [userInput, question, messages])
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
-  }
-
-  const formatMessageContent = (content: string) => {
-    
-    let formatted = content
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-white">$1</strong>')
-      .replace(/\`(.*?)\`/g, '<code class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-red-600 dark:text-red-400 rounded text-sm font-mono">$1</code>')
-      .replace(/^• (.*$)/gim, '<div class="flex items-start gap-2 mb-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span><span>$1</span></div>')
-      .replace(/^(\d+\.) (.*$)/gim, '<div class="flex items-start gap-3 mb-2"><span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-semibold flex-shrink-0">$1</span><span>$2</span></div>')
-      .replace(/^> (.*$)/gim, '<div class="border-l-4 border-amber-400 bg-amber-50 dark:bg-amber-900/20 pl-4 py-2 my-2 rounded-r-lg"><span class="text-amber-800 dark:text-amber-200">💡 $1</span></div>')
-    
-    return formatted
-  }
-
-  const quickActions = [
-    { icon: "💡", text: "Hint please", action: "Can you give me a hint to get started?" },
-    { icon: "🎯", text: "Approach", action: "What's the best approach for this problem?" },
-    { icon: "⚡", text: "Time complexity", action: "What should be the time complexity?" },
-    { icon: "🔍", text: "Edge cases", action: "What edge cases should I consider?" },
-    { icon: "🚀", text: "Optimization", action: "How can I optimize my solution?" }
-  ]
-
+  // ── Loading — store not hydrated or no question yet ────────────────────────
   if (!question) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-blue-950 dark:to-indigo-950 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-200 dark:border-blue-800 mx-auto"></div>
-            <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-t-4 border-blue-600 dark:border-blue-400 mx-auto absolute inset-0"></div>
-          </div>
-          <p className="text-gray-600 dark:text-gray-400 mt-4 sm:mt-6 text-base sm:text-lg font-medium px-4">Loading your coding challenge...</p>
+      <div className="min-h-screen bg-zinc-50 dark:bg-[#050506] flex items-center justify-center">
+        <div className="fixed inset-0 pointer-events-none hidden dark:block overflow-hidden">
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] rounded-full bg-[#5E6AD2]/[0.07] blur-[140px]" />
         </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col items-center gap-5 px-4"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 rounded-2xl bg-[#5E6AD2]/20 blur-[24px]" />
+            <div className={`relative w-16 h-16 rounded-2xl
+              bg-gradient-to-br from-[#5E6AD2] to-[#4B57C5]
+              shadow-[0_0_0_1px_rgba(94,106,210,0.4),0_4px_24px_rgba(94,106,210,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]
+              flex items-center justify-center`}>
+              <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            </div>
+          </div>
+          <div className="text-center">
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-[#EDEDEF] tracking-tight mb-1.5">
+              Loading Problems
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-[#8A8F98]">
+              {allQuestions.length === 0 ? 'Waiting for question store to load...' : 'Picking a random problem for you...'}
+            </p>
+          </div>
+        </motion.div>
       </div>
     )
   }
 
+  // ── Main ───────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-blue-950 dark:to-indigo-950">
-    
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -right-20 sm:-top-40 sm:-right-40 w-40 h-40 sm:w-80 sm:h-80 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-20 -left-20 sm:-bottom-40 sm:-left-40 w-40 h-40 sm:w-80 sm:h-80 bg-indigo-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-96 sm:h-96 bg-purple-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="min-h-screen bg-zinc-50 dark:bg-[#050506] flex flex-col">
+
+      {/* Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className={`hidden dark:block absolute inset-0
+          bg-[radial-gradient(ellipse_at_top,#0a0a0f_0%,#050506_50%,#020203_100%)]`} />
+        <div className={`hidden dark:block absolute top-[-8%] left-1/2 -translate-x-[40%]
+          w-[900px] h-[500px] rounded-full bg-[#5E6AD2]/[0.08] blur-[150px] rp-blob-1`} />
+        <div className={`hidden dark:block absolute bottom-[5%] right-[2%]
+          w-[600px] h-[400px] rounded-full bg-indigo-600/[0.05] blur-[120px] rp-blob-2`} />
+        <div className={`hidden dark:block absolute top-[35%] left-[-5%]
+          w-[500px] h-[400px] rounded-full bg-purple-700/[0.04] blur-[100px] rp-blob-3`} />
+        <div className="absolute inset-0 opacity-[0.018] dark:opacity-[0.025]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: '256px',
+          }} />
+        <div className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(94,106,210,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(94,106,210,0.4) 1px, transparent 1px)`,
+            backgroundSize: '64px 64px',
+          }} />
       </div>
 
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:16px_16px] sm:bg-[size:32px_32px] dark:bg-[linear-gradient(rgba(59,130,246,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.02)_1px,transparent_1px)] pointer-events-none" />
-      
-      <div className="relative z-10 min-h-screen flex flex-col">
-     
-        <header className="border-b border-white/20 dark:border-gray-800/50 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
-            <div className="flex items-center justify-between gap-3">
-              {/* Back Button - Mobile Optimized */}
+      {/* Header */}
+      <header className={`relative z-50 sticky top-0
+        border-b border-zinc-200/70 dark:border-white/[0.06]
+        bg-white/80 dark:bg-[#050506]/90 backdrop-blur-xl flex-shrink-0
+        shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:shadow-none`}>
+        <div className={`absolute bottom-0 left-0 right-0 h-px
+          bg-gradient-to-r from-transparent via-[#5E6AD2]/12 to-transparent`} />
+
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-3.5">
+          <div className="flex items-center justify-between gap-3">
+
+            {/* Left */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
                 onClick={() => router.back()}
-                className="group inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 hover:scale-105"
-              >
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-100 dark:bg-gray-800 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 flex items-center justify-center mr-2 sm:mr-3 transition-colors">
-                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                </div>
-                <span className="font-medium text-sm sm:text-base hidden xs:inline">Back to Problems</span>
-                <span className="font-medium text-sm xs:hidden">Back</span>
+                className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg
+                  text-xs sm:text-sm font-medium
+                  text-zinc-600 dark:text-[#8A8F98]
+                  hover:bg-zinc-100 dark:hover:bg-white/[0.05]
+                  hover:text-zinc-900 dark:hover:text-[#EDEDEF]
+                  border border-transparent hover:border-zinc-200/60 dark:hover:border-white/[0.06]
+                  active:scale-[0.97] transition-all duration-150 flex-shrink-0`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="hidden sm:inline">Back to Problems</span>
+                <span className="sm:hidden">Back</span>
               </button>
 
-              <div className="flex items-center gap-2 sm:gap-3">
-                {/* AI Status - Hidden on very small screens */}
-                <div className="hidden sm:flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span>AI Tutor Active</span>
-                </div>
-                
-                {/* Mobile Sidebar Toggle */}
-                <button
-                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  className="lg:hidden p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
+              <div className="hidden md:block h-4 w-px bg-zinc-200 dark:bg-white/[0.08]" />
 
-           
+              <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full
+                bg-violet-50 dark:bg-violet-500/[0.08]
+                border border-violet-200/60 dark:border-violet-500/[0.12]`}>
+                <Shuffle className="w-3 h-3 text-violet-500 dark:text-violet-400" />
+                <span className="text-[11px] font-semibold tracking-[0.08em] text-violet-600 dark:text-violet-300">
+                  Random Problem
+                </span>
+              </div>
+
+              <span className="hidden lg:block text-sm font-medium text-zinc-500 dark:text-[#8A8F98] truncate max-w-xs">
+                {question.title}
+              </span>
+            </div>
+
+            {/* Right */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                bg-emerald-50 dark:bg-emerald-500/[0.06]
+                border border-emerald-200/60 dark:border-emerald-500/[0.12]`}>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">AI Active</span>
+              </div>
+
+              <button
+                onClick={pickNewQuestion}
+                className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg
+                  text-xs sm:text-sm font-medium
+                  text-zinc-600 dark:text-[#8A8F98]
+                  hover:bg-zinc-100 dark:hover:bg-white/[0.05]
+                  hover:text-zinc-900 dark:hover:text-[#EDEDEF]
+                  border border-zinc-200/60 dark:border-white/[0.06]
+                  hover:border-zinc-300/70 dark:hover:border-white/[0.10]
+                  active:scale-[0.97] transition-all duration-150`}>
+                <Shuffle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">New Problem</span>
+              </button>
+
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className={`lg:hidden p-2 rounded-lg
+                  text-zinc-600 dark:text-[#8A8F98]
+                  hover:bg-zinc-100 dark:hover:bg-white/[0.05]
+                  border border-transparent hover:border-zinc-200/60 dark:hover:border-white/[0.06]
+                  transition-all duration-150`}>
+                <Zap className="w-4 h-4" />
+              </button>
+                   <ToggleButton/>
+              {question.link && (
                 <a
-                  href={dailyProblemLink || '#'} // Use the dynamically fetched link
+                  href={question.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-3 py-2 sm:px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                >
+                  className={`group relative inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl overflow-hidden
+                    bg-gradient-to-b from-[#5E6AD2] to-[#4B57C5] text-white
+                    text-xs sm:text-sm font-semibold
+                    shadow-[0_0_0_1px_rgba(94,106,210,0.5),0_2px_8px_rgba(94,106,210,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]
+                    hover:shadow-[0_0_0_1px_rgba(94,106,210,0.65),0_4px_20px_rgba(94,106,210,0.35),inset_0_1px_0_rgba(255,255,255,0.2)]
+                    active:scale-[0.97] transition-all duration-150`}>
+                  <span className={`absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%]
+                    transition-transform duration-500
+                    bg-gradient-to-r from-transparent via-white/20 to-transparent`} />
                   <span className="hidden sm:inline">View Problem</span>
                   <span className="sm:hidden">View</span>
-                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1 sm:ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
-              </div>
+              )}
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="flex-1 flex flex-col max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
-          {/* Problem Header Card - Responsive */}
-          <div className="mb-4 sm:mb-6 lg:mb-8">
-            <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-white/20 dark:border-gray-800/50 shadow-2xl shadow-blue-500/10">
-              <div className="flex flex-col gap-4 sm:gap-6">
-                <div className="flex-1">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 dark:from-white dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent mb-3 sm:mb-4 leading-tight">
-                    {question.title} {/* Changed from question.Question to question.title */}
-                  </h1>
-                  
-                  {/* Tags - Responsive Grid */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
-                    <span className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow-lg ${
-                      question.difficulty === 'Easy' ? 'bg-gradient-to-r from-green-400 to-green-500 text-white' : // Use 'Easy' as string
-                      question.difficulty === 'Medium' ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white' : // Use 'Medium' as string
-                      'bg-gradient-to-r from-rose-400 to-red-500 text-white'
-                    }`}>
-                      {question.difficulty} {/* Changed from question.Difficulty to question.difficulty */}
+      {/* Main */}
+      <main className={`relative z-10 flex-1 flex flex-col min-h-0
+        max-w-[1400px] mx-auto w-full
+        px-3 sm:px-5 lg:px-8 py-4 sm:py-5 lg:py-6`}>
+
+        {/* Problem header card — re-animates on each shuffle */}
+        <motion.div
+          key={question.title}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-4 sm:mb-5 flex-shrink-0"
+        >
+          <div className={`rounded-2xl overflow-hidden
+            bg-white dark:bg-[#0a0a0c]
+            border border-zinc-200/70 dark:border-white/[0.06]
+            shadow-[0_2px_16px_rgba(0,0,0,0.05)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_4px_32px_rgba(0,0,0,0.4)]`}>
+            <div className="h-px bg-gradient-to-r from-transparent via-[#5E6AD2]/35 to-transparent" />
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <div className="flex items-start gap-4">
+                <div className="flex-1 min-w-0">
+
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-mono font-semibold tracking-[0.14em] uppercase text-violet-500/60 dark:text-violet-400/60">
+                      Random Problem
                     </span>
-                    
-                    {/* Removed Topics and Frequency as they are not directly available in the daily API response */}
-                    {/* If topics are needed, they would need to be parsed from the content or added to the API response */}
+                    {question.frequency > 0 && (
+                      <>
+                        <span className="text-[10px] text-zinc-300 dark:text-white/15">·</span>
+                        <span className="text-[10px] font-mono font-semibold tracking-[0.14em] uppercase text-zinc-400 dark:text-white/30">
+                          {question.frequency} {question.frequency === 1 ? 'company' : 'companies'}
+                        </span>
+                      </>
+                    )}
                   </div>
+
+                  <h1 className="text-lg sm:text-2xl lg:text-[1.75rem] font-bold tracking-tight leading-tight text-zinc-900 dark:text-[#EDEDEF] mb-3">
+                    {question.title}
+                  </h1>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <DifficultyBadge difficulty={question.difficulty} />
+
+                    {question.topics.slice(0, 4).map(tag => (
+                      <span key={tag} className={`inline-flex items-center px-2.5 py-0.5 rounded-full
+                        text-[11px] font-medium
+                        bg-zinc-100 dark:bg-white/[0.04]
+                        text-zinc-500 dark:text-[#8A8F98]
+                        border border-zinc-200/60 dark:border-white/[0.06]`}>
+                        {tag}
+                      </span>
+                    ))}
+
+                    {question.link && (
+                      <a
+                        href={question.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full
+                          text-[11px] font-medium
+                          text-zinc-500 dark:text-[#8A8F98]
+                          bg-zinc-100 dark:bg-white/[0.04]
+                          border border-zinc-200/60 dark:border-white/[0.06]
+                          hover:text-[#5E6AD2] dark:hover:text-indigo-300
+                          hover:border-[#5E6AD2]/30 dark:hover:border-[#5E6AD2]/20
+                          transition-all duration-150`}>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        LeetCode
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div className="hidden sm:flex flex-col gap-2 items-end flex-shrink-0">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center
+                    bg-violet-50 dark:bg-violet-500/[0.07]
+                    border border-violet-200/60 dark:border-violet-500/[0.09]`}>
+                    <svg className="w-5 h-5 text-violet-400/60 dark:text-violet-400/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                  </div>
+                  <button
+                    onClick={pickNewQuestion}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium
+                      text-violet-600 dark:text-violet-400
+                      bg-violet-50 dark:bg-violet-500/[0.07]
+                      border border-violet-200/60 dark:border-violet-500/[0.12]
+                      hover:bg-violet-100 dark:hover:bg-violet-500/[0.12]
+                      active:scale-[0.97] transition-all duration-150`}>
+                    <Shuffle className="w-3 h-3" />
+                    Shuffle
+                  </button>
                 </div>
               </div>
             </div>
           </div>
+        </motion.div>
 
-     
-          <div className="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 min-h-0">
-            
-           
-            {isSidebarOpen && (
-              <div className="lg:hidden fixed inset-0 z-50 flex">
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
-                <div className="relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl w-80 max-w-[80vw] shadow-2xl border-r border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
-                    <button
-                      onClick={() => setIsSidebarOpen(false)}
-                      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="p-4 space-y-2">
-                    {quickActions.map((item, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          setUserInput(item.action)
-                          setIsSidebarOpen(false)
-                        }}
-                        className="w-full text-left p-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-lg">{item.icon}</span>
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-700 dark:group-hover:text-blue-300">
-                            {item.text}
-                          </span>
-                        </div>
+        {/* Content grid */}
+        <div className="flex-1 flex min-h-0">
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0 gap-4 sm:gap-5">
+
+            {/* Desktop sidebar */}
+            <div className="hidden lg:flex flex-col flex-shrink-0 w-56 xl:w-60">
+              <div className={`rounded-2xl overflow-hidden
+                bg-white dark:bg-[#0a0a0c]
+                border border-zinc-200/70 dark:border-white/[0.06]
+                shadow-[0_2px_16px_rgba(0,0,0,0.05)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_4px_32px_rgba(0,0,0,0.4)]
+                sticky top-[72px] max-h-[calc(100vh-7rem)] overflow-y-auto`}>
+                <div className="h-px bg-gradient-to-r from-transparent via-[#5E6AD2]/20 to-transparent" />
+                <div className="p-4">
+                  <p className="text-[10px] font-semibold text-zinc-400 dark:text-white/30 uppercase tracking-[0.14em] mb-3">
+                    Quick Actions
+                  </p>
+                  <div className="space-y-1">
+                    {QUICK_ACTIONS.map((item, i) => (
+                      <button key={i} onClick={() => setUserInput(item.action)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium rounded-xl
+                          text-zinc-600 dark:text-[#8A8F98]
+                          hover:bg-zinc-100 dark:hover:bg-white/[0.05]
+                          hover:text-zinc-900 dark:hover:text-[#EDEDEF]
+                          border border-zinc-200/60 dark:border-white/[0.06]
+                          hover:border-zinc-300/70 dark:hover:border-white/[0.10]
+                          active:scale-[0.98] transition-all duration-150 group text-left`}>
+                        <span className="text-zinc-400 dark:text-white/25 group-hover:text-[#5E6AD2] dark:group-hover:text-indigo-400 transition-colors flex-shrink-0">
+                          {item.icon}
+                        </span>
+                        {item.text}
                       </button>
                     ))}
                   </div>
-                </div>
-              </div>
-            )}
 
-            {/* Desktop Sidebar */}
-            <div className="hidden lg:block lg:col-span-1">
-              <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-gray-800/50 shadow-xl sticky top-24">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Quick Actions
-                </h3>
-                
-                <div className="space-y-2">
-                  {quickActions.map((item, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setUserInput(item.action)}
-                      className="w-full text-left p-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{item.icon}</span>
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-700 dark:group-hover:text-blue-300">
-                          {item.text}
+                  <div className="my-4 h-px bg-zinc-100 dark:bg-white/[0.04]" />
+
+                  <p className="text-[10px] font-semibold text-zinc-400 dark:text-white/30 uppercase tracking-[0.14em] mb-3">
+                    Session
+                  </p>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: 'Messages',   value: messages.length.toString() },
+                      { label: 'Difficulty', value: question.difficulty, colored: true },
+                      { label: 'Model',      value: selectedModel.split(' ')[0] },
+                      { label: 'Pool Size',  value: `${allQuestions.length.toLocaleString()}` },
+                    ].map(({ label, value, colored }) => (
+                      <div key={label}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl
+                          bg-zinc-50 dark:bg-white/[0.02]
+                          border border-zinc-100 dark:border-white/[0.04]`}>
+                        <span className="text-[11px] text-zinc-500 dark:text-[#8A8F98]">{label}</span>
+                        <span className={cn(
+                          'text-[11px] font-semibold',
+                          colored
+                            ? (
+                                question.difficulty === 'Easy'   ? 'text-emerald-600 dark:text-emerald-400' :
+                                question.difficulty === 'Medium' ? 'text-amber-600 dark:text-amber-400' :
+                                question.difficulty === 'Hard'   ? 'text-rose-600 dark:text-rose-400' :
+                                'text-zinc-700 dark:text-[#EDEDEF]'
+                              )
+                            : 'text-zinc-700 dark:text-[#EDEDEF]'
+                        )}>
+                          {value}
                         </span>
                       </div>
-                    </button>
-                  ))}
+                    ))}
+                  </div>
+
+                  <div className="my-4 h-px bg-zinc-100 dark:bg-white/[0.04]" />
+
+                  <button onClick={pickNewQuestion}
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-xl
+                      text-violet-600 dark:text-violet-400
+                      bg-violet-50 dark:bg-violet-500/[0.07]
+                      border border-violet-200/60 dark:border-violet-500/[0.12]
+                      hover:bg-violet-100 dark:hover:bg-violet-500/[0.12]
+                      active:scale-[0.98] transition-all duration-150`}>
+                    <Shuffle className="w-3.5 h-3.5" />
+                    New Random Problem
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Main Chat Interface - Responsive */}
-            <div className="flex-1 lg:col-span-3 flex flex-col min-h-0">
-              <div className="flex-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/20 dark:border-gray-800/50 shadow-2xl overflow-hidden flex flex-col">
-                
-                {/* Chat Messages - Responsive Height */}
-                <div className="flex-1 dark:bg-gray-900/90 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 min-h-0" style={{ height: 'calc(100vh - 20rem)' }}>
-                  {messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex gap-2 sm:gap-3 lg:gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      {message.role === 'assistant' && (
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className={`max-w-[85%] sm:max-w-4xl ${message.role === 'user' ? 'order-1' : ''}`}>
-                        <div
-                          className={`p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl shadow-lg ${
-                            message.role === 'user'
-                              ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white ml-auto'
-                              : 'bg-gradient-to-r  dark:from-gray-800 dark:to-gray-750 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          <div 
-                            className={`leading-relaxed text-sm sm:text-base ${message.role === 'assistant' ? 'prose prose-sm dark:prose-invert max-w-none' : ''}`}
-                            dangerouslySetInnerHTML={{
-                              __html: message.role === 'assistant' 
-                                ? formatMessageContent(message.content)
-                                : message.content
-                            }}
-                          />
-                          <div className={`text-xs mt-2 sm:mt-3 ${
-                            message.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                          }`}>
-                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                        </div>
-                      </div>
+            {/* Chat panel */}
+            <div className="flex-1 flex flex-col min-h-0">
 
-                      {message.role === 'user' && (
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 flex items-center justify-center shadow-lg">
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {/* Loading/Typing Indicator */}
-                  {(isLoading || isTyping) && (
-                    <div className="flex gap-2 sm:gap-3 lg:gap-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                          <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      </div>
-                      <div className="   dark:from-gray-800 dark:to-gray-750 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center space-x-2">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                          </div>
-                          <span className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">AI is typing...</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} /> 
-                </div>
-
-             
-                <div className={`p-3 sm:p-4 lg:p-6 border-t border-gray-200 dark:border-gray-800/50 bg-white/80 dark:bg-gray-900/80 ${isInputFocused ? 'ring-2 ring-blue-500/50' : ''} transition-all duration-200 rounded-b-2xl sm:rounded-b-3xl`}>
-                  <div className="flex items-center gap-3">
-                    <textarea
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      onFocus={() => setIsInputFocused(true)}
-                      onBlur={() => setIsInputFocused(false)}
-                      rows={1}
-                      className="flex-1 resize-none bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base pr-12"
-                      placeholder="Ask your AI tutor anything..."
-                      disabled={isLoading}
-                    />
-                    <button
-                      onClick={sendMessage}
-                      disabled={isLoading || !userInput.trim()}
-                      className="p-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl shadow-md hover:from-blue-700 hover:to-indigo-800 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                    >
-                      {isLoading ? (
-                        <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                </div>
+              {/* Mobile quick-action pills */}
+              <div className="lg:hidden mb-2.5 flex gap-1.5 overflow-x-auto pb-0.5 rp-no-scrollbar">
+                {QUICK_ACTIONS.map((item, i) => (
+                  <button key={i} onClick={() => setUserInput(item.action)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium
+                      bg-white dark:bg-white/[0.04]
+                      border border-zinc-200/60 dark:border-white/[0.06]
+                      text-zinc-600 dark:text-[#8A8F98]
+                      hover:bg-zinc-100 dark:hover:bg-white/[0.08]
+                      hover:text-zinc-900 dark:hover:text-[#EDEDEF]
+                      shadow-[0_1px_3px_rgba(0,0,0,0.05)] dark:shadow-none
+                      active:scale-[0.97] transition-all duration-150 whitespace-nowrap`}>
+                    <span className="text-[#5E6AD2]">{item.icon}</span>
+                    {item.text}
+                  </button>
+                ))}
               </div>
+
+              <Panel className="flex-1 min-h-[480px] sm:min-h-[560px]">
+                <PanelHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <AIIcon />
+                      <div>
+                        <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF] tracking-tight leading-none mb-0.5">
+                          AI Tutor
+                        </h3>
+                        <p className="text-[11px] text-zinc-500 dark:text-[#8A8F98] hidden sm:block">
+                          {selectedModel}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                      bg-emerald-50 dark:bg-emerald-500/[0.06]
+                      border border-emerald-200/60 dark:border-emerald-500/[0.12]`}>
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Online</span>
+                    </div>
+                  </div>
+                </PanelHeader>
+
+                <div className="flex-1 overflow-y-auto min-h-0 px-3 sm:px-4 lg:px-5 py-4 sm:py-5 space-y-3.5 rp-chat-scroll">
+                  <AnimatePresence initial={false}>
+                    {messages.map((msg, i) => <MessageBubble key={i} message={msg} />)}
+                  </AnimatePresence>
+                  {(isLoading || isTyping) && <AILoadingState />}
+                  <div ref={messagesEndRef} className="h-1" />
+                </div>
+
+                <div className={`p-3 sm:p-4 border-t border-zinc-200/60 dark:border-white/[0.06] flex-shrink-0
+                  bg-white/60 dark:bg-transparent`}>
+                  <AIPromptInput
+                    value={userInput}
+                    onChange={setUserInput}
+                    onSend={sendMessage}
+                    isLoading={isLoading}
+                    selectedModel={selectedModel}
+                    onModelChange={setSelectedModel}
+                  />
+                </div>
+              </Panel>
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
+
+      {/* Mobile drawer */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <>
+            <motion.div key="overlay"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden fixed inset-0 z-[60] bg-black/55 backdrop-blur-sm"
+              onClick={() => setIsSidebarOpen(false)} />
+            <motion.div key="drawer"
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className={`lg:hidden fixed inset-y-0 right-0 z-[61]
+                w-64 max-w-[82vw] flex flex-col
+                bg-white dark:bg-[#0a0a0c]
+                border-l border-zinc-200/70 dark:border-white/[0.06]
+                shadow-[-12px_0_48px_rgba(0,0,0,0.12)]
+                dark:shadow-[-12px_0_60px_rgba(0,0,0,0.55)]`}>
+              <div className={`absolute inset-y-0 left-0 w-px
+                bg-gradient-to-b from-transparent via-[#5E6AD2]/15 to-transparent`} />
+
+              <div className={`flex items-center justify-between px-5 py-4
+                border-b border-zinc-200/60 dark:border-white/[0.06] flex-shrink-0`}>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-[#5E6AD2]" />
+                  <span className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF] tracking-tight">Quick Actions</span>
+                </div>
+                <button onClick={() => setIsSidebarOpen(false)}
+                  className={`p-1.5 rounded-lg text-zinc-500 dark:text-[#8A8F98]
+                    hover:bg-zinc-100 dark:hover:bg-white/[0.06] transition-all`}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-1.5">
+                {QUICK_ACTIONS.map((item, i) => (
+                  <button key={i} onClick={() => { setUserInput(item.action); setIsSidebarOpen(false) }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+                      text-zinc-700 dark:text-[#8A8F98]
+                      hover:bg-zinc-100 dark:hover:bg-white/[0.05]
+                      hover:text-zinc-900 dark:hover:text-[#EDEDEF]
+                      border border-zinc-200/60 dark:border-white/[0.06]
+                      hover:border-zinc-300 dark:hover:border-white/[0.10]
+                      active:scale-[0.98] transition-all duration-150 group`}>
+                    <span className="text-zinc-400 dark:text-white/30 group-hover:text-[#5E6AD2] dark:group-hover:text-indigo-400 transition-colors">
+                      {item.icon}
+                    </span>
+                    {item.text}
+                  </button>
+                ))}
+                <div className="pt-3">
+                  <button onClick={() => { pickNewQuestion(); setIsSidebarOpen(false) }}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold
+                      text-violet-600 dark:text-violet-400
+                      bg-violet-50 dark:bg-violet-500/[0.07]
+                      border border-violet-200/60 dark:border-violet-500/[0.12]
+                      hover:bg-violet-100 dark:hover:bg-violet-500/[0.12]
+                      active:scale-[0.98] transition-all duration-150`}>
+                    <Shuffle className="w-4 h-4" />
+                    New Random Problem
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t border-zinc-200/60 dark:border-white/[0.06] p-4 flex-shrink-0 space-y-1.5">
+                {[
+                  { label: 'Model',      value: selectedModel.split(' ').slice(0, 2).join(' ') },
+                  { label: 'Difficulty', value: question.difficulty },
+                  { label: 'Pool',       value: `${allQuestions.length.toLocaleString()} probs` },
+                ].map(({ label, value }) => (
+                  <div key={label}
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl
+                      bg-zinc-50 dark:bg-white/[0.02]
+                      border border-zinc-100 dark:border-white/[0.04]`}>
+                    <span className="text-[11px] text-zinc-500 dark:text-[#8A8F98]">{label}</span>
+                    <span className="text-[11px] font-semibold text-zinc-700 dark:text-[#EDEDEF]">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <style jsx>{`
+        @keyframes rp-float-1  { 0%,100%{ transform:translateY(0px) rotate(0deg) scale(1); }    50%{ transform:translateY(-22px) rotate(1deg) scale(1.02); } }
+        @keyframes rp-float-2  { 0%,100%{ transform:translateY(0px) rotate(0deg); }              50%{ transform:translateY(-30px) rotate(-1deg); } }
+        @keyframes rp-float-3  { 0%,100%{ transform:translateY(0px); } 33%{ transform:translateY(-14px); } 66%{ transform:translateY(-24px); } }
+        @keyframes rp-bounce   { 0%,80%,100%{ transform:scale(0) translateY(0); opacity:0.4; } 40%{ transform:scale(1) translateY(-4px); opacity:1; } }
+
+        .rp-blob-1 { animation: rp-float-1 12s ease-in-out infinite; }
+        .rp-blob-2 { animation: rp-float-2 16s ease-in-out infinite; }
+        .rp-blob-3 { animation: rp-float-3 20s ease-in-out infinite; }
+
+        .rp-code-fade { background: linear-gradient(to bottom, transparent 30%, rgba(249,250,251,0.97) 100%); }
+        :global(.dark) .rp-code-fade { background: linear-gradient(to bottom, transparent 30%, rgba(10,10,12,0.97) 100%); }
+
+        .rp-no-scrollbar::-webkit-scrollbar { display: none; }
+        .rp-no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .rp-chat-scroll::-webkit-scrollbar { width: 3px; }
+        .rp-chat-scroll::-webkit-scrollbar-track { background: transparent; }
+        .rp-chat-scroll::-webkit-scrollbar-thumb { background: rgba(161,161,170,0.2); border-radius: 99px; }
+        .rp-chat-scroll::-webkit-scrollbar-thumb:hover { background: rgba(161,161,170,0.4); }
+        :global(.dark) .rp-chat-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); }
+        :global(.dark) .rp-chat-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+      `}</style>
     </div>
   )
 }
