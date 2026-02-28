@@ -164,7 +164,7 @@ export default function Home() {
               </button>
 
               <button
-                onClick={() => router.push('/challenges/premium')}
+                onClick={() => router.push('/leetcode/premium')}
                 className="inline-flex items-center gap-2 px-8 py-4 bg-transparent border-2 border-zinc-900/10 dark:border-white/10 text-zinc-700 dark:text-zinc-300 font-semibold rounded-2xl hover:bg-zinc-900/5 dark:hover:bg-white/5 hover:border-zinc-900/20 dark:hover:border-white/20 transition-all duration-300 backdrop-blur-sm"
               >
                 <Sparkles className="w-5 h-5" />
