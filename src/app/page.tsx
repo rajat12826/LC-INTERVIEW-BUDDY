@@ -1,20 +1,261 @@
 'use client'
 
-import { Code, Trophy, Users, ArrowRight, Zap, Target, Brain, BookOpen, Sparkles, Award, Clock, CheckCircle } from 'lucide-react'
+import { Code, Trophy, Users, ArrowRight, Zap, Target, Brain, BookOpen, Sparkles, Award, Clock, CheckCircle, Cloud, Cpu, Globe, Lock } from 'lucide-react'
 import Navbar from './_components/layout/Navbar'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
 import DotGrid from './_components/DotGrid'
 import { useTheme } from 'next-themes'
+import { motion, useMotionValue, useSpring, useTransform } from 'motion/react'
+import { cn } from '@/lib/utils'
+import type { LucideIcon } from 'lucide-react'
 
-// Dynamically import heavy components
-const DynamicFeatureCard = dynamic(() => Promise.resolve(FeatureCard), {
-  loading: () => 
-  <div className="h-64 bg-zinc-100/50 dark:bg-zinc-800/50 animate-pulse rounded-2xl backdrop-blur-sm" />
-})
+// ─── SpotlightCards Types & Constants ──────────────────────────────────────────
+
+const TILT_MAX = 9
+const TILT_SPRING = { stiffness: 300, damping: 28 } as const
+const GLOW_SPRING = { stiffness: 180, damping: 22 } as const
+
+export interface SpotlightItem {
+  icon: LucideIcon
+  title: string
+  description: string
+  color: string
+}
+
+// ─── Feature Data mapped to SpotlightItem format ───────────────────────────────
+
+const PRIMARY_FEATURES: SpotlightItem[] = [
+  {
+    icon: Brain,
+    title: 'AI Coding Tutor',
+    description:
+      'Get personalized guidance from Google\'s Gemini AI. Receive problem analysis, algorithm design strategies, code review, and optimization tips — all without spoiling the solution.',
+    color: '#0ea5e9',
+  },
+  {
+    icon: Code,
+    title: 'Monaco Code Editor',
+    description:
+      'Code in the same professional editor that powers VS Code. Syntax highlighting for 8+ languages, IntelliSense, multiple themes, keyboard shortcuts, and auto-formatting.',
+    color: '#6366f1',
+  },
+]
+
+const SECONDARY_FEATURES: SpotlightItem[] = [
+  {
+    icon: Sparkles,
+    title: 'Premium Problems',
+    description:
+      'Access exclusive challenges with detailed explanations, visual diagrams, multiple solution approaches, and company-specific insights.',
+    color: '#f59e0b',
+  },
+  {
+    icon: Target,
+    title: 'Smart Filtering',
+    description:
+      'Filter by difficulty, companies (Google, Amazon, Microsoft), topics, and solved status. Find exactly what you need to practice.',
+    color: '#10b981',
+  },
+  {
+    icon: Trophy,
+    title: 'Progress Tracking',
+    description:
+      'Monitor your improvement with visual indicators, solved problem counts, and difficulty-based completion rates across all topics.',
+    color: '#f472b6',
+  },
+]
+
+const EXTRA_FEATURES: SpotlightItem[] = [
+  {
+    icon: BookOpen,
+    title: 'Similar Questions',
+    description:
+      'AI-powered recommendations help you discover related problems and master patterns efficiently.',
+    color: '#34d399',
+  },
+  {
+    icon: Users,
+    title: 'Multi-Language',
+    description:
+      'Code in Python, JavaScript, Java, C++, Go, Rust, TypeScript, and more with full syntax highlighting.',
+    color: '#a78bfa',
+  },
+  {
+    icon: CheckCircle,
+    title: 'Real-Time Solutions',
+    description:
+      'Get instant feedback on your code with time and space complexity analysis from the AI tutor.',
+    color: '#38bdf8',
+  },
+  {
+    icon: Award,
+    title: 'Company Focus',
+    description:
+      'Practice problems asked by Google, Meta, Amazon, Microsoft, Apple, and 50+ top tech companies.',
+    color: '#fb923c',
+  },
+]
+
+// ─── SpotlightCard Component ───────────────────────────────────────────────────
+
+interface CardProps {
+  item: SpotlightItem
+  dimmed: boolean
+  onHoverStart: () => void
+  onHoverEnd: () => void
+}
+
+function SpotlightCard({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
+  const Icon = item.icon
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  const normX = useMotionValue(0.5)
+  const normY = useMotionValue(0.5)
+
+  const rawRotateX = useTransform(normY, [0, 1], [TILT_MAX, -TILT_MAX])
+  const rawRotateY = useTransform(normX, [0, 1], [-TILT_MAX, TILT_MAX])
+
+  const rotateX = useSpring(rawRotateX, TILT_SPRING)
+  const rotateY = useSpring(rawRotateY, TILT_SPRING)
+  const glowOpacity = useSpring(0, GLOW_SPRING)
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = cardRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    normX.set((e.clientX - rect.left) / rect.width)
+    normY.set((e.clientY - rect.top) / rect.height)
+  }
+
+  const handleMouseEnter = () => {
+    glowOpacity.set(1)
+    onHoverStart()
+  }
+
+  const handleMouseLeave = () => {
+    normX.set(0.5)
+    normY.set(0.5)
+    glowOpacity.set(0)
+    onHoverEnd()
+  }
+
+  return (
+    <motion.div
+      animate={{
+        scale: dimmed ? 0.96 : 1,
+        opacity: dimmed ? 0.5 : 1,
+      }}
+      className={cn(
+        'group relative flex flex-col gap-5 overflow-hidden rounded-2xl border p-6 h-full',
+        'border-zinc-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]',
+        'dark:border-white/6 dark:bg-white/3 dark:shadow-none',
+        'transition-[border-color] duration-300',
+        'hover:border-zinc-300 dark:hover:border-white/14'
+      )}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseMove={handleMouseMove}
+      ref={cardRef}
+      style={{
+        rotateX,
+        rotateY,
+        transformPerspective: 900,
+      }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
+    >
+      {/* Static accent tint */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-2xl"
+        style={{
+          background: `radial-gradient(ellipse at 20% 20%, ${item.color}14, transparent 65%)`,
+        }}
+      />
+
+      {/* Hover glow layer */}
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-2xl"
+        style={{
+          opacity: glowOpacity,
+          background: `radial-gradient(ellipse at 20% 20%, ${item.color}2e, transparent 65%)`,
+        }}
+      />
+
+      {/* Shimmer sweep */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 left-0 w-[55%] -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/[0.045] to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[280%]"
+      />
+
+      {/* Icon badge */}
+      <div
+        className="relative z-10 flex h-10 w-10 items-center justify-center rounded-xl flex-shrink-0"
+        style={{
+          background: `${item.color}18`,
+          boxShadow: `inset 0 0 0 1px ${item.color}30`,
+        }}
+      >
+        <Icon size={17} strokeWidth={1.9} style={{ color: item.color }} />
+      </div>
+
+      {/* Text */}
+      <div className="relative z-10 flex flex-col gap-2 flex-grow">
+        <h3 className="font-semibold text-[14px] text-zinc-900 tracking-tight dark:text-white">
+          {item.title}
+        </h3>
+        <p className="text-[12.5px] text-zinc-500 leading-relaxed dark:text-white/40">
+          {item.description}
+        </p>
+      </div>
+
+      {/* Accent bottom line */}
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 left-0 h-[2px] w-0 rounded-full transition-all duration-500 group-hover:w-full"
+        style={{
+          background: `linear-gradient(to right, ${item.color}80, transparent)`,
+        }}
+      />
+    </motion.div>
+  )
+}
+
+// ─── SpotlightGrid wrapper ─────────────────────────────────────────────────────
+
+function SpotlightGrid({
+  items,
+  columns = 3,
+}: {
+  items: SpotlightItem[]
+  columns?: 2 | 3 | 4
+}) {
+  const [hoveredTitle, setHoveredTitle] = useState<string | null>(null)
+
+  const colClass = {
+    2: 'sm:grid-cols-2',
+    3: 'sm:grid-cols-3',
+    4: 'sm:grid-cols-2 lg:grid-cols-4',
+  }[columns]
+
+  return (
+    <div className={`grid grid-cols-1 gap-3 ${colClass}`}>
+      {items.map((item) => (
+        <SpotlightCard
+          dimmed={hoveredTitle !== null && hoveredTitle !== item.title}
+          item={item}
+          key={item.title}
+          onHoverEnd={() => setHoveredTitle(null)}
+          onHoverStart={() => setHoveredTitle(item.title)}
+        />
+      ))}
+    </div>
+  )
+}
 
 export default function Home() {
   const { isSignedIn, user, isLoaded } = useUser()
@@ -27,7 +268,7 @@ export default function Home() {
     return {
       email: user.emailAddresses[0]?.emailAddress,
       id: user.id,
-      name: user.fullName || user.username || 'Unknown User'
+      name: user.fullName || user.username || 'Unknown User',
     }
   }, [user])
 
@@ -44,7 +285,7 @@ export default function Home() {
         const { email, id: clerkUserId, name } = userData
 
         if (!email || !clerkUserId) {
-          console.error("Clerk user email or ID not found.")
+          console.error('Clerk user email or ID not found.')
           return
         }
 
@@ -55,7 +296,7 @@ export default function Home() {
           .single()
 
         if (fetchError && fetchError.code !== 'PGRST116') {
-          console.error("Error fetching user:", fetchError)
+          console.error('Error fetching user:', fetchError)
           return
         }
 
@@ -70,11 +311,11 @@ export default function Home() {
               clerk_user_id: clerkUserId,
               email,
               name,
-              is_premium: false
+              is_premium: false,
             })
 
           if (insertError) {
-            console.error("Error inserting user:", insertError)
+            console.error('Error inserting user:', insertError)
             return
           }
 
@@ -82,7 +323,7 @@ export default function Home() {
         }
       }
     } catch (error) {
-      console.error("Unexpected error:", error)
+      console.error('Unexpected error:', error)
     } finally {
       setIsProcessingClick(false)
     }
@@ -92,14 +333,13 @@ export default function Home() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-500">
       <Navbar />
 
-      {/* Hero Section with DotGrid */}
+      {/* ── Hero Section ──────────────────────────────────────────────────────── */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-        {/* DotGrid Background */}
         <div className="absolute inset-0 z-0">
           <DotGrid
             dotSize={10}
             gap={15}
-            baseColor={theme === "dark" ? "#0f172a" : "#cbd5e1"}
+            baseColor={theme === 'dark' ? '#0f172a' : '#cbd5e1'}
             activeColor="#0ea5e9"
             proximity={120}
             shockRadius={250}
@@ -109,15 +349,12 @@ export default function Home() {
           />
         </div>
 
-        {/* Atmospheric gradient overlays */}
         <div className="absolute inset-0 z-[1] bg-gradient-to-b from-zinc-50/80 via-zinc-50/50 to-zinc-50/80 dark:from-zinc-950/80 dark:via-zinc-950/50 dark:to-zinc-950/80" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/20 dark:bg-sky-400/10 rounded-full blur-[128px]" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 dark:bg-indigo-400/10 rounded-full blur-[128px]" />
 
-        {/* Content */}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center space-y-8">
-            {/* Eyebrow text */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/5 dark:bg-white/5 border border-zinc-900/10 dark:border-white/10 backdrop-blur-xl">
               <Brain className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               <span className="text-sm font-semibold tracking-wide text-zinc-700 dark:text-zinc-300">
@@ -125,7 +362,6 @@ export default function Home() {
               </span>
             </div>
 
-            {/* Main heading */}
             <div className="space-y-4">
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight">
                 <span className="block text-zinc-900 dark:text-white mb-2">
@@ -135,14 +371,15 @@ export default function Home() {
                   With Your AI Tutor
                 </span>
               </h1>
-              
+
               <p className="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto leading-relaxed font-light">
-                Practice 1000+ curated problems with Google Gemini AI guidance.
-                <span className="block mt-2">Code in Monaco Editor. Track your progress. Land your dream job.</span>
+                Practice 1800+ curated problems with Google Gemini AI guidance.
+                <span className="block mt-2">
+                  Code in Monaco Editor. Track your progress. Land your dream job.
+                </span>
               </p>
             </div>
 
-            {/* CTA Section */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
               <button
                 onClick={handleStartPracticingClick}
@@ -172,11 +409,10 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Trust indicators */}
             <div className="flex items-center justify-center gap-8 pt-12 text-sm text-zinc-600 dark:text-zinc-400 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="font-medium">1000+ Curated Problems</span>
+                <span className="font-medium">1800+ Curated Problems</span>
               </div>
               <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700 hidden sm:block" />
               <div className="flex items-center gap-2">
@@ -193,106 +429,57 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="relative py-32 bg-white dark:bg-zinc-900" aria-labelledby="features-heading">
-        {/* Subtle background texture */}
-        <div className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03]" 
-             style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgb(0 0 0) 1px, transparent 0)', backgroundSize: '40px 40px' }} 
+      {/* ── Features Section ───────────────────────────────────────────────────── */}
+      <section
+        className="relative py-32 bg-white dark:bg-zinc-900"
+        aria-labelledby="features-heading"
+      >
+        {/* Dot grid texture */}
+        <div
+          className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 1px 1px, rgb(0 0 0) 1px, transparent 0)',
+            backgroundSize: '40px 40px',
+          }}
         />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section header */}
-          <div className="max-w-3xl mb-20">
+          <div className="max-w-3xl mb-16">
             <div className="inline-block mb-4">
               <span className="text-sm font-semibold tracking-wide uppercase text-sky-600 dark:text-sky-400">
                 Everything You Need
               </span>
             </div>
-            <h2 id="features-heading" className="text-4xl sm:text-5xl font-bold text-zinc-900 dark:text-white mb-6 leading-tight">
+            <h2
+              id="features-heading"
+              className="text-4xl sm:text-5xl font-bold text-zinc-900 dark:text-white mb-6 leading-tight"
+            >
               Built for serious interview preparation
             </h2>
             <p className="text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              From AI-powered guidance to professional code editing, we've built every feature 
+              From AI-powered guidance to professional code editing, we've built every feature
               to help you succeed in technical interviews at top tech companies.
             </p>
           </div>
 
-          {/* Features grid */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Top row - Two equal cards */}
-            <DynamicFeatureCard
-              icon={<Brain className="w-10 h-10" />}
-              title="AI Coding Tutor"
-              description="Get personalized guidance from Google's Gemini AI. Receive problem analysis, algorithm design strategies, code review with constructive feedback, and optimization tips - all without spoiling the solution. Learn to think like a pro."
-              variant="primary"
-            />
-            
-            <DynamicFeatureCard
-              icon={<Code className="w-10 h-10" />}
-              title="Monaco Code Editor"
-              description="Code in the same professional editor that powers VS Code. Enjoy syntax highlighting for 8+ languages, IntelliSense auto-completion, multiple themes, keyboard shortcuts, and auto-formatting. Horizontal or vertical split layouts."
-              variant="primary"
-            />
-
-            {/* Bottom row - Three equal cards */}
-            <div className="lg:col-span-2 grid md:grid-cols-3 gap-6">
-              <DynamicFeatureCard
-                icon={<Sparkles className="w-8 h-8" />}
-                title="Premium Problems"
-                description="Access exclusive challenges with detailed explanations, visual diagrams, multiple solution approaches, and company-specific insights."
-                variant="secondary"
-              />
-              
-              <DynamicFeatureCard
-                icon={<Target className="w-8 h-8" />}
-                title="Smart Filtering"
-                description="Filter by difficulty, companies (Google, Amazon, Microsoft), topics, and solved status. Find exactly what you need to practice."
-                variant="secondary"
-              />
-              
-              <DynamicFeatureCard
-                icon={<Trophy className="w-8 h-8" />}
-                title="Progress Tracking"
-                description="Monitor your improvement with visual indicators, solved problem counts, and difficulty-based completion rates across all topics."
-                variant="secondary"
-              />
-            </div>
+          {/* Primary features — 2 columns */}
+          <div className="mb-3">
+            <SpotlightGrid items={PRIMARY_FEATURES} columns={2} />
           </div>
 
-          {/* Additional Features Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-            <DynamicFeatureCard
-              icon={<BookOpen className="w-8 h-8" />}
-              title="Similar Questions"
-              description="AI-powered recommendations help you discover related problems and master patterns efficiently."
-              variant="secondary"
-            />
-
-            <DynamicFeatureCard
-              icon={<Users className="w-8 h-8" />}
-              title="Multi-Language Support"
-              description="Code in Python, JavaScript, Java, C++, Go, Rust, TypeScript, and more with full syntax highlighting."
-              variant="secondary"
-            />
-
-            <DynamicFeatureCard
-              icon={<CheckCircle className="w-8 h-8" />}
-              title="Real-Time Solutions"
-              description="Get instant feedback on your code with time and space complexity analysis from the AI tutor."
-              variant="secondary"
-            />
-
-            <DynamicFeatureCard
-              icon={<Award className="w-8 h-8" />}
-              title="Company Focus"
-              description="Practice problems asked by Google, Meta, Amazon, Microsoft, Apple, and 50+ top tech companies."
-              variant="secondary"
-            />
+          {/* Secondary features — 3 columns */}
+          <div className="mb-3">
+            <SpotlightGrid items={SECONDARY_FEATURES} columns={3} />
           </div>
+
+          {/* Extra features — 4 columns */}
+          <SpotlightGrid items={EXTRA_FEATURES} columns={4} />
         </div>
       </section>
 
-      {/* How It Works Section */}
+      {/* ── How It Works Section ───────────────────────────────────────────────── */}
       <section className="relative py-32 bg-zinc-50 dark:bg-zinc-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
@@ -310,17 +497,15 @@ export default function Home() {
             <StepCard
               number="01"
               title="Browse & Filter"
-              description="Explore 1000+ curated problems. Filter by difficulty, company, topic, or solved status to find the perfect challenge."
+              description="Explore 1800+ curated problems. Filter by difficulty, company, topic, or solved status to find the perfect challenge."
               icon={<Target className="w-8 h-8" />}
             />
-
             <StepCard
               number="02"
               title="Code & Learn"
               description="Write code in the Monaco editor while getting personalized AI guidance. Ask questions, get hints, and learn best practices."
               icon={<Code className="w-8 h-8" />}
             />
-
             <StepCard
               number="03"
               title="Track Progress"
@@ -331,23 +516,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* ── Stats Section ──────────────────────────────────────────────────────── */}
       <section className="relative py-20 bg-zinc-900 dark:bg-zinc-950 overflow-hidden">
-        {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-indigo-500/10" />
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-sky-500/5 rounded-full blur-[128px] animate-pulse" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <StatCard number="1000+" label="Curated Problems" />
-            <StatCard number="50+" label="Top Companies" />
+            <StatCard number="1800+" label="Curated Problems" />
+            <StatCard number="100+" label="Top Companies" />
             <StatCard number="8+" label="Programming Languages" />
             <StatCard number="24/7" label="AI Tutor Available" />
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* ── CTA Section ────────────────────────────────────────────────────────── */}
       <section className="relative py-32 bg-white dark:bg-zinc-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-8">
@@ -390,68 +574,14 @@ export default function Home() {
   )
 }
 
-// Enhanced Feature Card Component
-function FeatureCard({ 
-  icon, 
-  title, 
+// ─── StepCard ─────────────────────────────────────────────────────────────────
+
+function StepCard({
+  number,
+  title,
   description,
-  variant = 'primary'
-}: { 
-  icon: React.ReactNode
-  title: string
-  description: string
-  variant?: 'primary' | 'secondary'
-}) {
-  const isPrimary = variant === 'primary'
-  
-  return (
-    <div className={`group relative h-full rounded-3xl overflow-hidden transition-all duration-500 hover:scale-[1.02] ${
-      isPrimary ? 'p-8 lg:p-10' : 'p-6 lg:p-8'
-    }`}>
-      {/* Card background with gradient border effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 to-white dark:from-zinc-800 dark:to-zinc-900 rounded-3xl" />
-      <div className="absolute inset-[1px] bg-white dark:bg-zinc-900 rounded-3xl" />
-      
-      {/* Hover gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-sky-500/0 via-indigo-500/0 to-violet-500/0 group-hover:from-sky-500/5 group-hover:via-indigo-500/5 group-hover:to-violet-500/5 transition-all duration-500 rounded-3xl" />
-
-      {/* Content */}
-      <div className="relative h-full flex flex-col">
-        {/* Icon */}
-        <div className={`flex items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-800 dark:from-white dark:to-zinc-100 text-white dark:text-zinc-900 shadow-xl group-hover:shadow-2xl transition-shadow duration-500 ${
-          isPrimary ? 'w-16 h-16 mb-6' : 'w-14 h-14 mb-5'
-        }`}>
-          {icon}
-        </div>
-
-        {/* Text */}
-        <h3 className={`font-bold text-zinc-900 dark:text-white mb-3 leading-tight ${
-          isPrimary ? 'text-2xl' : 'text-xl'
-        }`}>
-          {title}
-        </h3>
-        <p className={`text-zinc-600 dark:text-zinc-400 leading-relaxed flex-grow ${
-          isPrimary ? 'text-base' : 'text-sm'
-        }`}>
-          {description}
-        </p>
-
-        {/* Decorative line */}
-        <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-          <div className="w-12 h-px bg-gradient-to-r from-zinc-900/20 to-transparent dark:from-white/20 group-hover:w-24 transition-all duration-500" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Step Card Component
-function StepCard({ 
-  number, 
-  title, 
-  description, 
-  icon 
-}: { 
+  icon,
+}: {
   number: string
   title: string
   description: string
@@ -469,27 +599,22 @@ function StepCard({
             {number}
           </div>
         </div>
-        <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-3">
-          {title}
-        </h3>
-        <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-          {description}
-        </p>
+        <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-3">{title}</h3>
+        <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">{description}</p>
       </div>
     </div>
   )
 }
 
-// Stat Card Component
+// ─── StatCard ─────────────────────────────────────────────────────────────────
+
 function StatCard({ number, label }: { number: string; label: string }) {
   return (
     <div className="text-center p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
       <div className="text-5xl font-bold bg-gradient-to-r from-sky-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent mb-2">
         {number}
       </div>
-      <div className="text-sm font-semibold tracking-wide uppercase text-zinc-400">
-        {label}
-      </div>
+      <div className="text-sm font-semibold tracking-wide uppercase text-zinc-400">{label}</div>
     </div>
   )
 }
