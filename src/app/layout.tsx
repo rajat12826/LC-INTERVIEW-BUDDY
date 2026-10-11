@@ -16,39 +16,54 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'LeetCode Interview Prep | Ace Coding Interviews',
+  metadataBase: new URL('https://lc-interview-buddy.vercel.app'),
+  title: {
+    default: 'LeetCode Interview Buddy (LC Buddy) – AI Coding Interview Prep & Tutor',
+    template: '%s | LeetCode Interview Buddy',
+  },
   description:
-    'Your ultimate LeetCode interview buddy. Practice top coding interview questions, master DSA, and ace technical interviews.',
+    'LeetCode Interview Buddy (LC Buddy) is an AI-powered coding interview companion. Master DSA problems, receive instant Socratic hints, write code in Monaco Editor, and ace technical interviews.',
   keywords: [
-    'leetcode',
-    'coding interview',
-    'technical interview',
-    'faang interview',
-    'data structures',
-    'algorithms'
+    'lc interview buddy',
+    'leetcode interview buddy',
+    'lc buddy',
+    'leetcode ai buddy',
+    'leetcode interview prep',
+    'coding interview prep',
+    'ai coding tutor',
+    'dsa practice',
+    'technical interview preparation',
+    'faang interview prep'
   ],
 
   alternates: {
-    canonical: 'https://lc-interview-buddy.vercel.app/',
+    canonical: 'https://lc-interview-buddy.vercel.app',
   },
 
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 
   openGraph: {
-    title: 'LeetCode Interview Prep | Ace Coding Interviews',
+    title: 'LeetCode Interview Buddy (LC Buddy) – AI Coding Interview Prep & Tutor',
     description:
-      'Your ultimate LeetCode interview buddy. Practice top coding interview questions and master DSA.',
-    url: 'https://lc-interview-buddy.vercel.app/',
+      'LeetCode Interview Buddy (LC Buddy) is an AI-powered coding interview companion. Master DSA problems, receive instant Socratic hints, and ace technical interviews.',
+    url: 'https://lc-interview-buddy.vercel.app',
     siteName: 'LeetCode Interview Buddy',
     images: [
       {
         url: 'https://lc-interview-buddy.vercel.app/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'LeetCode Interview Preparation',
+        alt: 'LeetCode Interview Buddy - AI Coding Companion',
       },
     ],
     locale: 'en_US',
@@ -57,9 +72,9 @@ export const metadata: Metadata = {
 
   twitter: {
     card: 'summary_large_image',
-    title: 'LeetCode Interview Prep | Ace Coding Interviews',
+    title: 'LeetCode Interview Buddy (LC Buddy) – AI Coding Interview Prep',
     description:
-      'Practice top coding interview questions and master DSA.',
+      'Master DSA problems and ace technical interviews with your AI coding buddy.',
     images: ['https://lc-interview-buddy.vercel.app/twitter-image.jpg'],
   },
 };
