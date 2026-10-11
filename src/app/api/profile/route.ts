@@ -28,12 +28,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'No data provided for update.' }, { status: 200 });
     }
 
-    // Update the user's profile in Supabase
+    // Upsert the user's profile in Supabase so new accounts never fail
+    const userEmail = clerkUser.emailAddresses[0]?.emailAddress || '';
     const { data, error } = await supabaseAdmin
-      .from('lc_users') // Your user table
-      .update(updateData)
-      .eq('clerk_user_id', clerkUser.id)
-      .select() // Select the updated row to return it
+      .from('lc_users')
+      .upsert(
+        {
+          clerk_user_id: clerkUser.id,
+          email: userEmail,
+          ...updateData,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'clerk_user_id' }
+      )
+      .select()
       .single();
 
     if (error) {

@@ -8,6 +8,7 @@ import { useChallengeFilterStore } from '@/utils/stores/useChallengeFilterStore'
 import ChallengeFilters from '@/app/_components/challenges/ChallengeFilter';
 import QuestionCard from '@/app/_components/challenges/QuestionCard';
 import { useQuestionStore } from '@/utils/stores/useQuestionStore';
+import { useQuestionsData } from '@/hooks/useQuestionsData';
 import { useUser } from '@clerk/nextjs'; // Import Clerk's useUser hook
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -23,7 +24,8 @@ type DodoProduct = {
 
 // This component will receive the `isPremium` status from the server component
 export default function ChallengesClientContent({ isPremium }: { isPremium: boolean }) {
-  const allQuestions = useQuestionStore((state) => state.allQuestions);
+  const { data } = useQuestionsData();
+  const allQuestions = data?.qData.questions || [];
   const { search, difficulty, category, companies, topics, solved, clearAll } = useChallengeFilterStore();
   const isSolved = useQuestionStore((state) => state.isSolved);
 

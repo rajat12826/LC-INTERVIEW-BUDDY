@@ -1,17 +1,19 @@
 'use client'
 
-import { Code, Trophy, Users, ArrowRight, Zap, Target, Brain, BookOpen, Sparkles, Award, Clock, CheckCircle, Cloud, Cpu, Globe, Lock } from 'lucide-react'
+import { Code, Trophy, Users, ArrowRight, Zap, Target, Brain, BookOpen, Sparkles, Award, CheckCircle } from 'lucide-react'
 import Navbar from './_components/layout/Navbar'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
-import DotGrid from './_components/DotGrid'
 import { useTheme } from 'next-themes'
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react'
 import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
+
+// Lazy-load heavy canvas animation — keeps initial JS parse lean
+const DotGrid = dynamic(() => import('./_components/DotGrid'), { ssr: false })
 
 // ─── SpotlightCards Types & Constants ──────────────────────────────────────────
 
@@ -33,7 +35,7 @@ const PRIMARY_FEATURES: SpotlightItem[] = [
     icon: Brain,
     title: 'AI Coding Tutor',
     description:
-      'Get personalized guidance from Google\'s Gemini AI. Receive problem analysis, algorithm design strategies, code review, and optimization tips — all without spoiling the solution.',
+      'Get personalized guidance from Groq\'s ultra-fast Llama 3 AI. Receive problem analysis, algorithm design strategies, code review, and optimization tips — all without spoiling the solution.',
     color: '#0ea5e9',
   },
   {
@@ -263,6 +265,10 @@ export default function Home() {
   const [isProcessingClick, setIsProcessingClick] = useState(false)
   const { theme } = useTheme()
 
+  useEffect(() => {
+    router.prefetch('/leetcode')
+  }, [router])
+
   const userData = useMemo(() => {
     if (!user) return null
     return {
@@ -289,38 +295,25 @@ export default function Home() {
           return
         }
 
-        const { data: existingUser, error: fetchError } = await supabase
+        const newUuid = crypto.randomUUID()
+        const { error: upsertError } = await supabase
           .from('lc_users')
-          .select('is_premium')
-          .eq('clerk_user_id', clerkUserId)
-          .single()
-
-        if (fetchError && fetchError.code !== 'PGRST116') {
-          console.error('Error fetching user:', fetchError)
-          return
-        }
-
-        if (existingUser) {
-          router.push('/leetcode')
-        } else {
-          const newUuid = crypto.randomUUID()
-          const { error: insertError } = await supabase
-            .from('lc_users')
-            .insert({
+          .upsert(
+            {
               id: newUuid,
               clerk_user_id: clerkUserId,
               email,
               name,
               is_premium: false,
-            })
+            },
+            { onConflict: 'clerk_user_id' }
+          )
 
-          if (insertError) {
-            console.error('Error inserting user:', insertError)
-            return
-          }
-
-          router.push('/leetcode')
+        if (upsertError) {
+          console.error('Error upserting user:', upsertError)
         }
+
+        router.push('/leetcode')
       }
     } catch (error) {
       console.error('Unexpected error:', error)
@@ -355,32 +348,47 @@ export default function Home() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center space-y-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/5 dark:bg-white/5 border border-zinc-900/10 dark:border-white/10 backdrop-blur-xl">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/5 dark:bg-white/5 border border-zinc-900/10 dark:border-white/10 backdrop-blur-xl"
+            >
               <Brain className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               <span className="text-sm font-semibold tracking-wide text-zinc-700 dark:text-zinc-300">
                 AI-Powered Coding Interview Companion
               </span>
-            </div>
+            </motion.div>
 
-            <div className="space-y-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+              className="space-y-4"
+            >
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight">
                 <span className="block text-zinc-900 dark:text-white mb-2">
                   Master Coding Interviews
                 </span>
-                <span className="block bg-gradient-to-r from-sky-600 via-indigo-600 to-violet-600 dark:from-sky-400 dark:via-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">
+                <span className="block bg-gradient-to-r from-sky-600 via-indigo-600 to-violet-600 dark:from-sky-400 dark:via-indigo-400 dark:to-violet-400 bg-clip-text text-transparent pb-2">
                   With Your AI Tutor
                 </span>
               </h1>
 
               <p className="text-xl sm:text-2xl text-zinc-600 dark:text-zinc-400 max-w-3xl mx-auto leading-relaxed font-light">
-                Practice 1800+ curated problems with Google Gemini AI guidance.
+                Practice 1800+ curated problems with ultra-fast Groq AI guidance.
                 <span className="block mt-2">
                   Code in Monaco Editor. Track your progress. Land your dream job.
                 </span>
               </p>
-            </div>
+            </motion.div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8"
+            >
               <button
                 onClick={handleStartPracticingClick}
                 disabled={isProcessingClick || !isLoaded}
@@ -402,29 +410,34 @@ export default function Home() {
 
               <button
                 onClick={() => router.push('/leetcode/premium')}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-transparent border-2 border-zinc-900/10 dark:border-white/10 text-zinc-700 dark:text-zinc-300 font-semibold rounded-2xl hover:bg-zinc-900/5 dark:hover:bg-white/5 hover:border-zinc-900/20 dark:hover:border-white/20 transition-all duration-300 backdrop-blur-sm"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-transparent border-2 border-zinc-900/10 dark:border-white/10 text-zinc-700 dark:text-zinc-300 font-semibold rounded-2xl hover:bg-zinc-900/5 dark:hover:bg-white/5 hover:border-zinc-900/20 dark:hover:border-white/20 transition-all duration-300 backdrop-blur-sm group"
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 text-amber-500 group-hover:scale-110 transition-transform" />
                 View Premium Problems
               </button>
-            </div>
+            </motion.div>
 
-            <div className="flex items-center justify-center gap-8 pt-12 text-sm text-zinc-600 dark:text-zinc-400 flex-wrap">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.3 }}
+              className="flex items-center justify-center gap-8 pt-12 text-sm text-zinc-600 dark:text-zinc-400 flex-wrap"
+            >
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 <span className="font-medium">1800+ Curated Problems</span>
               </div>
               <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700 hidden sm:block" />
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-sky-500 rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-sky-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.5)]" />
                 <span className="font-medium">AI-Powered Tutoring</span>
               </div>
               <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700 hidden sm:block" />
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
                 <span className="font-medium">Monaco Code Editor</span>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -494,39 +507,68 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <StepCard
-              number="01"
-              title="Browse & Filter"
-              description="Explore 1800+ curated problems. Filter by difficulty, company, topic, or solved status to find the perfect challenge."
-              icon={<Target className="w-8 h-8" />}
-            />
-            <StepCard
-              number="02"
-              title="Code & Learn"
-              description="Write code in the Monaco editor while getting personalized AI guidance. Ask questions, get hints, and learn best practices."
-              icon={<Code className="w-8 h-8" />}
-            />
-            <StepCard
-              number="03"
-              title="Track Progress"
-              description="Monitor your growth with visual indicators and statistics. Build confidence as you solve more problems across different topics."
-              icon={<Trophy className="w-8 h-8" />}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            >
+              <StepCard
+                number="01"
+                title="Browse & Filter"
+                description="Explore 1800+ curated problems. Filter by difficulty, company, topic, or solved status to find the perfect challenge."
+                icon={<Target className="w-8 h-8" />}
+              />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.15 }}
+            >
+              <StepCard
+                number="02"
+                title="Code & Learn"
+                description="Write code in the Monaco editor while getting personalized AI guidance. Ask questions, get hints, and learn best practices."
+                icon={<Code className="w-8 h-8" />}
+              />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.3 }}
+            >
+              <StepCard
+                number="03"
+                title="Track Progress"
+                description="Monitor your growth with visual indicators and statistics. Build confidence as you solve more problems across different topics."
+                icon={<Trophy className="w-8 h-8" />}
+              />
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* ── Stats Section ──────────────────────────────────────────────────────── */}
-      <section className="relative py-20 bg-zinc-900 dark:bg-zinc-950 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-indigo-500/10" />
+      <section className="relative py-20 bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 via-transparent to-indigo-500/5 dark:from-sky-500/10 dark:via-transparent dark:to-indigo-500/10" />
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-sky-500/5 rounded-full blur-[128px] animate-pulse" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <StatCard number="1800+" label="Curated Problems" />
-            <StatCard number="100+" label="Top Companies" />
-            <StatCard number="8+" label="Programming Languages" />
-            <StatCard number="24/7" label="AI Tutor Available" />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.0 }}>
+              <StatCard number="1800+" label="Curated Problems" />
+            </motion.div>
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1 }}>
+              <StatCard number="100+" label="Top Companies" />
+            </motion.div>
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.2 }}>
+              <StatCard number="8+" label="Programming Languages" />
+            </motion.div>
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.3 }}>
+              <StatCard number="24/7" label="AI Tutor Available" />
+            </motion.div>
           </div>
         </div>
       </section>
@@ -610,11 +652,11 @@ function StepCard({
 
 function StatCard({ number, label }: { number: string; label: string }) {
   return (
-    <div className="text-center p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
-      <div className="text-5xl font-bold bg-gradient-to-r from-sky-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent mb-2">
+    <div className="text-center p-8 rounded-2xl bg-white dark:bg-white/5 backdrop-blur-sm border border-zinc-200 dark:border-white/10 shadow-sm hover:shadow-md dark:shadow-none hover:bg-zinc-50 dark:hover:bg-white/10 transition-all duration-300">
+      <div className="text-5xl font-bold bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-500 dark:from-sky-400 dark:via-indigo-400 dark:to-violet-400 bg-clip-text text-transparent mb-2">
         {number}
       </div>
-      <div className="text-sm font-semibold tracking-wide uppercase text-zinc-400">{label}</div>
+      <div className="text-sm font-semibold tracking-wide uppercase text-zinc-500 dark:text-zinc-400">{label}</div>
     </div>
   )
 }

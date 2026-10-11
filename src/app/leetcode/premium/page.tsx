@@ -3,11 +3,21 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { useChallengeFilterStoreP } from '../../../utils/stores/useChallegeStoreP'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
+import { useQuestionsData } from '@/hooks/useQuestionsData'
 import PremiumQuestionCard from '@/app/_components/challenges/PremiumQuestionCard'
 import PremiumChallengeFilters from '@/app/_components/challenges/ChallegeFilterP'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, Crown, Flame, Target, Zap } from 'lucide-react'
 import DotGrid from '@/app/_components/DotGrid'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 type Example = {
   input: string
@@ -29,22 +39,24 @@ type PQuestion = {
   constraints: string[]
 }
 
-function useVirtualScrolling(items: PQuestion[], itemsPerPage = 24) {
+function usePagination(items: PQuestion[], itemsPerPage = 24) {
   const [currentPage, setCurrentPage] = useState(1)
 
+  const totalPages = Math.ceil(items.length / itemsPerPage)
+
   const paginatedItems = useMemo(() => {
-    return items.slice(0, currentPage * itemsPerPage)
+    const start = (currentPage - 1) * itemsPerPage
+    return items.slice(start, start + itemsPerPage)
   }, [items, currentPage, itemsPerPage])
 
-  const hasMore = currentPage * itemsPerPage < items.length
-
-  const loadMore = useCallback(() => {
-    if (hasMore) setCurrentPage(prev => prev + 1)
-  }, [hasMore])
+  const setPage = useCallback((page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   const reset = useCallback(() => setCurrentPage(1), [])
 
-  return { paginatedItems, hasMore, loadMore, reset }
+  return { paginatedItems, currentPage, totalPages, setPage, reset }
 }
 
 // ── Animated counter ──────────────────────────────────────────────────────────
@@ -74,7 +86,8 @@ function AnimatedNumber({ value }: { value: number }) {
 }
 
 export default function PremiumChallengesPage() {
-  const allPremiumQuestions = useQuestionStore(s => s.premiumQuestions)
+  const { data } = useQuestionsData()
+  const allPremiumQuestions = data?.pData || []
   const { search, difficulty, solved, clearAll } = useChallengeFilterStoreP()
   const isSolved = useQuestionStore(s => s.isSolved)
 
@@ -95,7 +108,7 @@ export default function PremiumChallengesPage() {
     })
   }, [allPremiumQuestions, search, difficulty, solved, isSolved])
 
-  const { paginatedItems, hasMore, loadMore, reset } = useVirtualScrolling(filteredQuestions, 24)
+  const { paginatedItems, currentPage, totalPages, setPage, reset } = usePagination(filteredQuestions, 24)
   useMemo(() => { reset() }, [filteredQuestions.length, reset])
 
   const stats = useMemo(() => ({
@@ -220,7 +233,7 @@ export default function PremiumChallengesPage() {
         {/* Grid */}
         {paginatedItems.length > 0 ? (
           <>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 mb-14">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 mb-14 min-h-[400px]">
               {paginatedItems.map((question, i) => (
                 <div
                   key={question.title}
@@ -232,31 +245,68 @@ export default function PremiumChallengesPage() {
               ))}
             </div>
 
-            {hasMore && (
-              <div className="text-center space-y-4">
-                <Button
-                  onClick={loadMore}
-                  size="lg"
-                  className={`group relative inline-flex items-center gap-2.5 px-8 py-6 rounded-xl overflow-hidden
-                    bg-gradient-to-b from-amber-500 to-orange-600
-                    hover:from-amber-400 hover:to-orange-500
-                    text-white font-semibold text-sm tracking-wide
-                    shadow-[0_0_0_1px_rgba(245,158,11,0.5),0_4px_12px_rgba(245,158,11,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]
-                    hover:shadow-[0_0_0_1px_rgba(245,158,11,0.6),0_8px_30px_rgba(245,158,11,0.35),inset_0_1px_0_rgba(255,255,255,0.2)]
-                    active:scale-[0.98]
-                    transition-all duration-200`}
-                >
-                  {/* Shine sweep */}
-                  <span className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                  <span>Load More Problems</span>
-                  <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform duration-200" />
-                </Button>
+            {totalPages > 1 && (
+              <div className="mt-8 flex flex-col items-center gap-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          if (currentPage > 1) setPage(currentPage - 1); 
+                        }}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {currentPage > 3 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setPage(1); }}>1</PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem><PaginationEllipsis /></PaginationItem>
+                      </>
+                    )}
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => Math.abs(currentPage - page) <= 2)
+                      .map(page => (
+                        <PaginationItem key={page}>
+                          <PaginationLink 
+                            href="#" 
+                            isActive={currentPage === page} 
+                            onClick={(e) => { e.preventDefault(); setPage(page); }}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                    ))}
+
+                    {currentPage < totalPages - 2 && (
+                      <>
+                        <PaginationItem><PaginationEllipsis /></PaginationItem>
+                        <PaginationItem>
+                          <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setPage(totalPages); }}>{totalPages}</PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          if (currentPage < totalPages) setPage(currentPage + 1); 
+                        }}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
                 <p className="text-sm font-medium text-zinc-500 dark:text-[#8A8F98]">
-                  Showing{' '}
-                  <span className="text-zinc-900 dark:text-[#EDEDEF] font-semibold">{paginatedItems.length}</span>
-                  {' '}of{' '}
-                  <span className="text-zinc-900 dark:text-[#EDEDEF] font-semibold">{filteredQuestions.length}</span>
-                  {' '}problems
+                  Showing page <span className="text-zinc-900 dark:text-[#EDEDEF] font-semibold">{currentPage}</span> of <span className="text-zinc-900 dark:text-[#EDEDEF] font-semibold">{totalPages}</span>
+                  {' '}—{' '}<span className="text-zinc-900 dark:text-[#EDEDEF] font-semibold">{filteredQuestions.length}</span> total problems
                 </p>
               </div>
             )}

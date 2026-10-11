@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   motion,
@@ -15,6 +15,7 @@ import { Menu, X, Calendar, User, Shuffle, Star, BookOpen } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import AnimatedDarkModeToggle from "./AnimatedDarkModeToggle";
 import { cn } from "@/lib/utils";
+import { useNavigation } from "@/providers/NavigationProvider";
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
@@ -30,15 +31,18 @@ const navigationItems = [
 
 export default function Navbar() {
   const pathname            = usePathname();
+  const router              = useRouter();
+  const { isNavigating, targetPath, startNavigation } = useNavigation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { resolvedTheme }   = useTheme();
-  console.log(resolvedTheme);
   const [mounted, setMounted] = useState(false);
 
-  // 1. Handle Mounting
+  // 1. Handle Mounting + prefetch all nav routes so Turbopack
+  //    pre-compiles them, eliminating first-visit lag
   useEffect(() => {
     setMounted(true);
-  }, []);
+    navigationItems.forEach((item) => router.prefetch(item.href));
+  }, [router]);
 
 const dark = mounted ? resolvedTheme === "dark" : true;
   // ── Scroll-triggered pill mode ────────────────────────────────────────────
@@ -185,11 +189,15 @@ const dark = mounted ? resolvedTheme === "dark" : true;
         {/* Nav links */}
         <nav className="flex items-center gap-px">
           {navigationItems.map((item) => {
-            const isActive = pathname === item.href;
+            const activePath = (isNavigating && targetPath) ? targetPath : pathname;
+            const isActive = activePath === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => {
+                  if (item.href !== pathname) startNavigation(item.href);
+                }}
                 className="relative flex items-center gap-1.5 px-3 py-[7px] rounded-full
                   select-none text-[11.5px] font-semibold tracking-[0.05em] uppercase
                   transition-colors duration-150 outline-none
@@ -348,7 +356,8 @@ const dark = mounted ? resolvedTheme === "dark" : true;
               <div className="p-2 space-y-px">
                 {navigationItems.map((item, i) => {
                   const Icon = item.icon;
-                  const isActive = pathname === item.href;
+                  const activePath = (isNavigating && targetPath) ? targetPath : pathname;
+                  const isActive = activePath === item.href;
                   return (
                     <motion.div
                       key={item.href}
@@ -362,7 +371,10 @@ const dark = mounted ? resolvedTheme === "dark" : true;
                     >
                       <Link
                         href={item.href}
-                        onClick={() => setMobileOpen(false)}
+                        onClick={() => {
+                          setMobileOpen(false);
+                          if (item.href !== pathname) startNavigation(item.href);
+                        }}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl
                           text-[12px] font-semibold tracking-[0.05em] uppercase
                           transition-all duration-150 group"

@@ -1,57 +1,97 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
-import { Sun, Moon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { flushSync } from "react-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 
-interface AnimatedDarkModeToggleProps {
-  size?: number;
-  className?: string;
-}
-
-const ToggleButton: React.FC<AnimatedDarkModeToggleProps> = ({
-  size = 24,
-  className = ""
-}) => {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+export default function AnimatedDarkModeToggle({ className }: { className?: string; size?: number }) {
+  const { setTheme, resolvedTheme } = useTheme();
+  const switchRef = useRef<HTMLButtonElement>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const isDark = resolvedTheme === 'dark';
+  const isDark = resolvedTheme === "dark";
 
-  const handleToggle = () => {
-    setTheme(isDark ? 'light' : 'dark');
+  const toggleTheme = () => {
+    // View Transition API isn't available in every browser.
+    if (!document.startViewTransition) {
+      setTheme(isDark ? 'light' : 'dark');
+      return;
+    }
+
+    const transition = document.startViewTransition(() => {
+      flushSync(() => {
+        setTheme(isDark ? 'light' : 'dark');
+      });
+    });
+
+    transition.ready.then(() => {
+      const button = switchRef.current;
+
+      if (!button) return;
+
+      const { top, left, width, height } = button.getBoundingClientRect();
+
+      // Start from the center of the toggle.
+      const x = left + width / 2;
+      const y = top + height / 2;
+
+      const right = window.innerWidth - x;
+      const bottom = window.innerHeight - y;
+
+      const maxRadius = Math.hypot(Math.max(x, right), Math.max(y, bottom));
+
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${maxRadius}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: 700,
+          easing: "ease-in-out",
+          pseudoElement: "::view-transition-new(root)",
+        }
+      );
+    });
   };
 
-  if (!mounted) {
-    return (
-      <div
-        style={{ width: size + 16, height: size + 16 }}
-        className={`flex items-center justify-center ${className}`}
-      />
-    );
-  }
-
   return (
-    <Button
-      variant="outline"
-      size="icon"
-      onClick={handleToggle}
-      aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
-      className='cursor-pointer'
-    >
-       <Sun className={`h-[1.2rem] w-[1.2rem] transition-all duration-300 ${isDark ? "scale-0 rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"}`} />
-
-        {/* Moon Icon */}
-        <Moon className={`absolute h-[1.2rem] w-[1.2rem] transition-all duration-300 ${isDark ? "scale-100 rotate-0 opacity-100" : "scale-0 -rotate-90 opacity-0"}`} />
-         <span className="sr-only">Toggle theme</span>
-      
-   </Button>
+    <div className="relative group flex items-center justify-center">
+      <button
+        ref={switchRef}
+        type="button"
+        onClick={toggleTheme}
+        className={
+          className ||
+          "relative flex size-10 hover:size-11 items-center justify-center rounded-xl text-black/60 dark:text-white/60 transition-all duration-200 ease-out hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white active:scale-95 cursor-pointer"
+        }
+      >
+        {mounted ? (
+          <div className="relative flex items-center justify-center size-[1.15rem]">
+            <Moon
+              className={`size-[1.15rem] transition-all duration-300 group-hover:scale-110 ${isDark
+                ? "rotate-90 scale-0 opacity-0 pointer-events-none absolute"
+                : "rotate-0 scale-100 opacity-100"
+                }`}
+            />
+            <Sun
+              className={`size-[1.15rem] transition-all duration-300 group-hover:scale-110 ${isDark
+                ? "rotate-0 scale-100 opacity-100"
+                : "-rotate-90 scale-0 opacity-0 pointer-events-none absolute"
+                }`}
+            />
+          </div>
+        ) : (
+          <div className="size-[1.15rem]" />
+        )}
+        <span className="sr-only">Toggle theme</span>
+      </button>
+    </div>
   );
-};
-
-export default ToggleButton;
+}

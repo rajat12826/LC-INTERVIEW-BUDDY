@@ -5,6 +5,7 @@ import { Webhook } from 'svix';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/server';
 import { sendMail } from '@/utils/mail/sendMail';
+import { after } from 'next/server';
 
 // Simple device info parser without external dependencies
 function parseUserAgent(userAgent: string) {
@@ -65,55 +66,20 @@ function parseUserAgent(userAgent: string) {
   return { browser, os, deviceType };
 }
 
-// Get location from IP address
-async function getLocationFromIP(ipAddress: string): Promise<string> {
-  // Skip private/local IPs
-  if (
-    ipAddress === '127.0.0.1' ||
-    ipAddress.startsWith('192.168.') ||
-    ipAddress.startsWith('10.') ||
-    ipAddress.startsWith('172.16.') ||
-    ipAddress.startsWith('::1') ||
-    ipAddress === 'localhost'
-  ) {
-    return 'Local Network';
+// Get location from Vercel edge headers (zero-latency)
+function getLocationFromHeaders(req: NextRequest, ipAddress: string): string {
+  // Try to use Vercel's geolocation headers first (available in production)
+  const city = req.headers.get('x-vercel-ip-city');
+  const region = req.headers.get('x-vercel-ip-country-region');
+  const country = req.headers.get('x-vercel-ip-country');
+
+  if (city && country) {
+    const cityDecoded = decodeURIComponent(city);
+    return region ? `${cityDecoded}, ${region}, ${country}` : `${cityDecoded}, ${country}`;
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
-
-  try {
-    // Using free ip-api.com service (no API key required)
-    const response = await fetch(`http://ip-api.com/json/${ipAddress}?fields=status,country,regionName,city,timezone`, {
-      signal: controller.signal, // Pass the AbortSignal here
-      headers: {
-        'User-Agent': 'LC-Interview-Buddy/1.0',
-      },
-    });
-
-    // Clear the timeout if the fetch completes before the timeout
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.status === 'success') {
-        return `${data.city}, ${data.regionName}, ${data.country}`;
-      }
-    }
-  } catch (error: any) { // Use 'any' for error type if you're not narrowing it down further
-    // Check if the error is due to abortion (timeout)
-    if (error.name === 'AbortError') {
-      console.warn('Geolocation lookup timed out.');
-      return `IP: ${ipAddress} (Timeout)`; // Indicate timeout in the location
-    }
-    console.warn('Geolocation lookup failed:', error);
-  } finally {
-    // Ensure timeout is cleared even if an error occurs for other reasons
-    clearTimeout(timeoutId);
-  }
-
-  // Fallback to just showing IP
-  return `IP: ${ipAddress}`;
+  // Fallback if headers are missing
+  return ipAddress !== '127.0.0.1' ? `IP: ${ipAddress}` : 'Local Network';
 }
 
 export async function POST(req: NextRequest) {
@@ -281,8 +247,8 @@ export async function POST(req: NextRequest) {
       // Parse device information
       const deviceInfo = parseUserAgent(userAgent);
 
-      // Get location using the updated getLocationFromIP function
-      let location = await getLocationFromIP(ipAddress);
+      // Get location using Vercel headers (instant, no external API fetch)
+      let location = getLocationFromHeaders(req, ipAddress);
 
       // Fetch user data from Supabase
       const { data: userData, error: userError } = await supabaseAdmin
@@ -321,28 +287,27 @@ export async function POST(req: NextRequest) {
         userAgent: userAgent.length > 100 ? userAgent.substring(0, 100) + '...' : userAgent, // Truncate long user agents
         ipAddress: ipAddress !== '127.0.0.1' ? ipAddress : 'Local Network',
         dashboardUrl: process.env.NEXT_PUBLIC_APP_URL
-          ? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/leetcode`
           : '#',
         securityUrl: process.env.NEXT_PUBLIC_APP_URL
-          ? `${process.env.NEXT_PUBLIC_APP_URL}/settings/security`
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/leetcode/profile`
           : '#',
       };
 
-      // Send email notification
-      try {
-        await sendMail({
-          email: customerEmail,
-          subject: '🔒 Security Alert: Account Sign-In Detected - LC Interview Buddy',
-          templateName: 'signin_notification.ejs',
-          data: emailData,
-        });
-
-        // console.log(`Sign-in notification email sent successfully to: ${customerEmail}`);
-        // console.log(`Device: ${deviceInfo.deviceType} | Browser: ${deviceInfo.browser} | OS: ${deviceInfo.os} | Location: ${location}`);
-      } catch (emailError) {
-        console.error(`Failed to send sign-in email to ${customerEmail}:`, emailError);
-        // Don't fail the webhook if email fails - just log the error
-      }
+      // Use after() to safely execute email sending in the background
+      // This allows the webhook to immediately return a 200 OK to Clerk to prevent timeouts
+      after(async () => {
+        try {
+          await sendMail({
+            email: customerEmail,
+            subject: '🔒 Security Alert: Account Sign-In Detected - LC Interview Buddy',
+            templateName: 'signin_notification.ejs',
+            data: emailData,
+          });
+        } catch (emailError) {
+          console.error(`Failed to send sign-in email to ${customerEmail}:`, emailError);
+        }
+      });
 
       return new Response('Sign-in notification processed successfully', { status: 200 });
     } catch (error) {

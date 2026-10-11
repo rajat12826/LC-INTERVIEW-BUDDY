@@ -1,8 +1,22 @@
-
 "use client"
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import Navbar from '../_components/layout/Navbar'
+import { useQuery } from '@tanstack/react-query'
+import { useNavigation } from '@/providers/NavigationProvider'
+import LoadingProblems from './loading'
+import LoadingPremium from './premium/loading'
+import LoadingDaily from './daily/loading'
+import LoadingRandom from './random/loading'
+import LoadingProfile from './profile/loading'
+
+function RouteSkeleton({ targetPath }: { targetPath: string | null }) {
+    if (targetPath?.includes('/profile')) return <LoadingProfile />;
+    if (targetPath?.includes('/daily')) return <LoadingDaily />;
+    if (targetPath?.includes('/random')) return <LoadingRandom />;
+    if (targetPath?.includes('/premium')) return <LoadingPremium />;
+    return <LoadingProblems />;
+}
 
 function Layout({
     children,
@@ -12,66 +26,54 @@ function Layout({
     const setQuestions = useQuestionStore((state) => state.setAllQuestions)
     const setPQuestions = useQuestionStore((state) => state.setPremiumQuestions)
     const setRandomQuestion = useQuestionStore((state) => state.setRandomQuestion)
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { isNavigating, targetPath } = useNavigation()
 
+    // staleTime: Infinity means this only runs once per session — never on tab switch
+    const { data, isLoading, error } = useQuery({
+        queryKey: ['questionsData'],
+        queryFn: async () => {
+            const [qRes, pRes] = await Promise.all([
+                fetch('/api/questions'),
+                fetch('/api/premiumQ')
+            ]);
+            if (!qRes.ok || !pRes.ok) throw new Error('Failed to fetch questions');
+
+            const qData = await qRes.json();
+            const pData = await pRes.json();
+            return { qData, pData };
+        },
+        staleTime: Infinity,
+    });
+
+    // Sync fetched data into the Zustand store once available
     useEffect(() => {
-        const fetchQuestions = async () => {
-            try {
-              
-                const response = await fetch('/api/questions');
-                const responseP = await fetch('/api/premiumQ');
-                
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                if (!responseP.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json(); // Parse the JSON response
-                const dataP = await responseP.json(); 
-                // console.log(dataP);
-                setQuestions(data);
-                setPQuestions(dataP) // Set questions in Zustand store
-                setRandomQuestion(); // Set random question after all questions are loaded
-            } catch (err: any) {
-                console.error("Failed to load questions:", err);
-                setError("Failed to load questions. Please try again.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchQuestions();
-    }, [setQuestions, setRandomQuestion]); // Dependency array remains the same
-
-    if (isLoading) {
-        return (
-            <div>
-                <Navbar />
-                <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
-                    Loading questions...
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div>
-                <Navbar />
-                <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-red-600">
-                    Error: {error}
-                </div>
-            </div>
-        );
-    }
+        if (!data) return;
+        // /api/questions returns { questions, problems, allCompanies, allTopics }
+        if (data.qData?.questions?.length) {
+            setQuestions(data.qData.questions);
+            setRandomQuestion();
+        }
+        // /api/premiumQ returns a flat array
+        if (Array.isArray(data.pData) && data.pData.length) {
+            setPQuestions(data.pData);
+        }
+    }, [data, setQuestions, setPQuestions, setRandomQuestion]);
 
     return (
         <div>
             <Navbar />
-            {children}
+
+            {isLoading ? (
+                <LoadingProblems />
+            ) : error ? (
+                <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-rose-500 font-medium">
+                    Error loading problem sets. Please refresh the page.
+                </div>
+            ) : isNavigating ? (
+                <RouteSkeleton targetPath={targetPath} />
+            ) : (
+                children
+            )}
         </div>
     )
 }

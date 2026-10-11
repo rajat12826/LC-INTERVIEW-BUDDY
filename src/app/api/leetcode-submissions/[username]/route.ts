@@ -25,7 +25,6 @@ export async function GET(
    
     
     const { username } = await params;
-     console.log(username);
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
 
@@ -57,9 +56,6 @@ export async function GET(
         },
       }
     );
-    console.log(data);
-    
-
     const submissions = data?.data?.recentAcSubmissionList;
 
     if (!Array.isArray(submissions) || submissions.length === 0) {

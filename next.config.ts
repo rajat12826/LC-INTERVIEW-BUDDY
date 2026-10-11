@@ -12,20 +12,24 @@ const nextConfig = {
     },
     // Enable package imports optimization for better tree-shaking
     optimizePackageImports: ['recharts', 'lodash', 'lucide-react', '@clerk/nextjs'],
-    // Enable Turbopack for faster builds (optional)
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
+  },
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
   },
   
   // Combine all image configurations
   images: {
-    domains: ['avatars.githubusercontent.com', 'res.cloudinary.com','assets.leetcode.com'],
+    // Migrated from deprecated `domains` to `remotePatterns` (Next.js 14+)
+    remotePatterns: [
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      { protocol: 'https', hostname: 'assets.leetcode.com' },
+    ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
     // Add image optimization settings

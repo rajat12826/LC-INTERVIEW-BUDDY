@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState, useRef, FC, useMemo } from 'react'
+import { useEffect, useState, useRef, FC, useMemo, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore' // Assuming this correctly imports PQuestion
+import { usePremiumQuestionById } from '@/hooks/useQuestionsData'
 import dynamic from 'next/dynamic'
 import clsx from 'clsx' // For conditional styling
 import { chatSession } from '@/utils/GeminiAIModel'
@@ -81,7 +82,7 @@ const ExampleDisplay: FC<ExampleProps> = ({ example, index }) => {
 export default function AITutorPage() {
   const params = useParams()
   const router = useRouter()
-  const { getQuestionPById } = useQuestionStore() // getQuestionById directly from store
+  const { question: fetchedQuestion, isLoading: isQuestionLoading } = usePremiumQuestionById(params.id as string)
 
   const isMobile = useMobile()
   const [question, setQuestion] = useState<PQuestionAdapted | null>(null) // Use the adapted type
@@ -338,11 +339,13 @@ solution();`
 
 
   useEffect(() => {
-    const questionId = params.id as string
-    const foundQuestion = getQuestionPById(questionId)
+    if (!params.id) {
+      router.push('/leetcode')
+      return
+    }
 
-    if (foundQuestion) {
-      setQuestion(foundQuestion)
+    if (fetchedQuestion) {
+      setQuestion(fetchedQuestion)
       // Set initial code with the question details
       setCode(getCodeTemplate(language))
 
@@ -350,10 +353,10 @@ solution();`
         role: 'assistant',
         content: `🎯 **Welcome to your AI Coding Session!**
 
-I'm here to guide you through **"${foundQuestion.title}"** - a **${foundQuestion.difficulty}** level challenge.
+I'm here to guide you through **"${fetchedQuestion.title}"** - a **${fetchedQuestion.difficulty}** level challenge.
 
 **🔍 Problem Focus Areas:**
-${Array.isArray(foundQuestion.topics) ? foundQuestion.topics.map((topic: string) => `• ${topic.trim()}`).join('\n') : foundQuestion.topics ? `• ${foundQuestion.topics.trim()}` : 'No specific topics.'}
+${Array.isArray(fetchedQuestion.topics) ? fetchedQuestion.topics.map((topic: string) => `• ${topic.trim()}`).join('\n') : fetchedQuestion.topics ? `• ${fetchedQuestion.topics.trim()}` : 'No specific topics.'}
 
 **💡 How I can help you:**
 • 🧠 **Problem Analysis** - Break down the requirements
@@ -376,7 +379,7 @@ Ready to start coding? What would you like to explore first? 🚀`,
       // If question not found, redirect or show error
       router.replace('/challenges') // Redirects to the challenges page
     }
-  }, [params.id, getQuestionPById, language, router, getCodeTemplate])
+  }, [params.id, fetchedQuestion, language, router, getCodeTemplate])
 
   useEffect(() => {
     scrollToBottom()
@@ -572,11 +575,10 @@ Ready to start coding? What would you like to explore first? 🚀`,
                 <div className="hidden xl:flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                   <button
                     onClick={() => setLayout('horizontal')}
-                    className={`p-2 rounded-md transition-all duration-200 ${
-                      layout === 'horizontal'
+                    className={`p-2 rounded-md transition-all duration-200 ${layout === 'horizontal'
                         ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                    }`}
+                      }`}
                     title="Horizontal Layout"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -585,11 +587,10 @@ Ready to start coding? What would you like to explore first? 🚀`,
                   </button>
                   <button
                     onClick={() => setLayout('vertical')}
-                    className={`p-2 rounded-md transition-all duration-200 ${
-                      layout === 'vertical'
+                    className={`p-2 rounded-md transition-all duration-200 ${layout === 'vertical'
                         ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                    }`}
+                      }`}
                     title="Vertical Layout"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -730,7 +731,7 @@ Ready to start coding? What would you like to explore first? 🚀`,
                 </h2>
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar text-slate-700 dark:text-slate-300 text-sm leading-relaxed space-y-4">
                   <p>{question.description}</p>
-                  
+
                   {question.illustration && (
                     <div className="my-5 flex justify-center">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -813,6 +814,7 @@ Ready to start coding? What would you like to explore first? 🚀`,
                         <select
                           value={language}
                           onChange={(e) => handleLanguageChange(e.target.value)}
+                          aria-label="Select programming language"
                           className="bg-transparent text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-0"
                         >
                           {languageOptions.map((option) => (

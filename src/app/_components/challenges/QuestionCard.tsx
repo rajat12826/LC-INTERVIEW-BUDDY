@@ -37,7 +37,10 @@ interface SimilarQuestion {
 
 const QuestionCard: FC<QuestionCardProps> = ({ question }) => {
   const router = useRouter()
-  const { markAsSolved, isSolved, setCurrentQuestion, getQuestionIdFromUrl } = useQuestionStore()
+  const markAsSolved = useQuestionStore((state) => state.markAsSolved)
+  const isSolved = useQuestionStore((state) => state.isSolved)
+  const setCurrentQuestion = useQuestionStore((state) => state.setCurrentQuestion)
+  const getQuestionIdFromUrl = useQuestionStore((state) => state.getQuestionIdFromUrl)
 
   const solved = isSolved(question.Question)
 

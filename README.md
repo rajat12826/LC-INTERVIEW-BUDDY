@@ -22,14 +22,15 @@
 
 ### ✨ Key Highlights
 
-- 🧠 **AI-Powered Tutoring** - Get personalized guidance using Google's Gemini AI
-- 💎 **Premium Problem Collection** - Access exclusive, detailed problem sets
-- ⚡ **Real-Time Code Editor** - Monaco Editor with multi-language support
+- ⚡ **Ultra-Fast AI Tutoring** - Powered by Groq LPU (LLaMA 3.3 70B) with BYOK (Bring Your Own Key) support
+- 💎 **Premium Problem Collection** - Access exclusive, detailed problem sets with visual aids
+- 💻 **Real-Time Code Editor** - VS Code-grade Monaco Editor with multi-language support
+- ⏱️ **Interview Timer** - Floating draggable stopwatch with audio alerts and time tracking
+- 🚀 **Zero-Perceived Latency** - Optimistic navigation, route progress bar, and instant skeletons
 - 🎯 **Smart Filtering** - Filter by difficulty, companies, topics, and solved status
-- 📊 **Progress Tracking** - Track your solved problems and improvement
-- 🌙 **Dark/Light Mode** - Beautiful UI with theme switching
-- 🔍 **Similar Questions** - Discover related problems dynamically
-- 💳 **Subscription Management** - Dodo integration for premium features
+- 📊 **Progress & Stats Card** - LeetCode profile synchronization and shareable card export
+- 🌙 **Dark/Light Mode** - Polished UI with smooth theme transitions
+- 🛡️ **Edge Security** - Upstash Redis rate limiting and authenticated AI proxying
 
 ---
 
@@ -47,14 +48,13 @@
 - Real-time search functionality
 - Progress tracking with visual indicators
 
-#### 2. **AI Coding Tutor**
-Powered by Google's Gemini AI, the tutor provides:
-- Problem analysis and requirements breakdown
-- Algorithm design and optimization strategies
-- Step-by-step guidance without spoiling solutions
+#### 2. **AI Coding Tutor (Groq LPU)**
+Powered by Groq's ultra-low latency LPU engine (LLaMA 3.3 70B & DeepSeek):
+- Socratic guidance without spoiling solutions
 - Code review with constructive feedback
 - Time and space complexity analysis
-- Best practices and clean code patterns
+- Edge case identification
+- Multi-key rotation on server + Bring Your Own Key (BYOK) support in user profile
 
 #### 3. **Premium Problem Collection**
 - Exclusive premium challenges with:
@@ -122,10 +122,11 @@ Powered by Google's Gemini AI, the tutor provides:
 - **State Management:** Zustand
 
 ### Backend & Services
-- **API Routes:** Next.js API Routes
-- **AI Integration:** Google Gemini AI
+- **API Routes:** Next.js Serverless & Edge API Routes
+- **AI Engine:** Groq Cloud LPU (LLaMA 3.3 70B, GPT-OSS 120B)
+- **Rate Limiting:** Upstash Redis (Sliding Window at Edge)
 - **Authentication:** Clerk
-- **Database:** Supabase
+- **Database:** Supabase PostgreSQL
 - **Payments:** Stripe, DodoPayments
 - **Email:** Nodemailer
 
@@ -173,27 +174,17 @@ Create a `.env.local` file in the root directory:
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 CLERK_SECRET_KEY=your_clerk_secret_key
 
-# Google Gemini AI
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+# Groq Cloud AI (Server Fallback Keys - comma separated)
+GROQ_KEYS=gsk_key1,gsk_key2
+
+# Upstash Redis (Rate Limiting)
+UPSTASH_REDIS_REST_URL=your_upstash_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Stripe
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-STRIPE_SECRET_KEY=your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
-
-# DodoPayments
-NEXT_PUBLIC_DODO_BUSINESS_ID=your_dodo_business_id
-DODO_API_KEY=your_dodo_api_key
-
-# Email Configuration
-SMTP_HOST=your_smtp_host
-SMTP_PORT=587
-SMTP_USER=your_email
-SMTP_PASS=your_password
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Application
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -427,7 +418,7 @@ See [Installation](#-installation) for required environment variables.
 
 <div align="center">
 
-**Made with ❤️ by developers, for developers**
+**Made with ❤️ by Dev.Rajat, for developers**
 
 
 [⬆ Back to Top](#-leetcode-interview-buddy)

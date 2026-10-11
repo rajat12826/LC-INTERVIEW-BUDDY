@@ -5,10 +5,20 @@ import { useChallengeFilterStore } from '@/utils/stores/useChallengeFilterStore'
 import ChallengeFilters from '../_components/challenges/ChallengeFilter'
 import QuestionCard from '../_components/challenges/QuestionCard'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
+import { useQuestionsData } from '@/hooks/useQuestionsData'
 import { Question } from '@/utils/types'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, Sparkles } from 'lucide-react'
 import DotGrid from '../_components/DotGrid'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 // ── Animated counter (ported from PremiumChallengesPage) ──────────────────────
 function AnimatedNumber({ value }: { value: number }) {
@@ -36,27 +46,30 @@ function AnimatedNumber({ value }: { value: number }) {
   return <>{display}</>
 }
 
-// Virtual scrolling hook
-function useVirtualScrolling(items: Question[], itemsPerPage = 24) {
+// Pagination hook
+function usePagination(items: Question[], itemsPerPage = 24) {
   const [currentPage, setCurrentPage] = useState(1)
 
+  const totalPages = Math.ceil(items.length / itemsPerPage)
+
   const paginatedItems = useMemo(() => {
-    return items.slice(0, currentPage * itemsPerPage)
+    const start = (currentPage - 1) * itemsPerPage
+    return items.slice(start, start + itemsPerPage)
   }, [items, currentPage, itemsPerPage])
 
-  const hasMore = currentPage * itemsPerPage < items.length
-
-  const loadMore = useCallback(() => {
-    if (hasMore) setCurrentPage(prev => prev + 1)
-  }, [hasMore])
+  const setPage = useCallback((page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   const reset = useCallback(() => setCurrentPage(1), [])
 
-  return { paginatedItems, hasMore, loadMore, reset }
+  return { paginatedItems, currentPage, totalPages, setPage, reset }
 }
 
 export default function ChallengesPage() {
-  const allQuestions = useQuestionStore((state) => state.allQuestions)
+  const { data } = useQuestionsData()
+  const allQuestions = data?.qData.questions || []
   const { search, difficulty, companies, topics, solved, clearAll } = useChallengeFilterStore()
   const isSolved = useQuestionStore((state) => state.isSolved)
 
@@ -83,7 +96,7 @@ export default function ChallengesPage() {
     })
   }, [allQuestions, search, difficulty, companies, topics, solved, isSolved])
 
-  const { paginatedItems, hasMore, loadMore, reset } = useVirtualScrolling(filteredQuestions, 24)
+  const { paginatedItems, currentPage, totalPages, setPage, reset } = usePagination(filteredQuestions, 24)
   useMemo(() => { reset() }, [filteredQuestions.length, reset])
 
   const stats = useMemo(() => ({
@@ -173,30 +186,74 @@ export default function ChallengesPage() {
         {/* Grid */}
         {paginatedItems.length > 0 ? (
           <>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 min-h-[400px]">
               {paginatedItems.map((question) => (
                 <QuestionCard key={question.Question} question={question} />
               ))}
             </div>
 
-            {hasMore && (
-              <div className="text-center space-y-4">
-                <Button
-                  onClick={loadMore}
-                  size="lg"
-                  className="group inline-flex items-center gap-3 px-8 py-6 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl shadow-zinc-900/20 dark:shadow-white/20 hover:shadow-2xl hover:shadow-zinc-900/30 dark:hover:shadow-white/30"
-                >
-                  <span>Load More Problems</span>
-                  <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform duration-300" />
-                </Button>
+            {totalPages > 1 && (
+              <div className="mt-8 flex flex-col items-center gap-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          if (currentPage > 1) setPage(currentPage - 1); 
+                        }}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {currentPage > 3 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setPage(1); }}>1</PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem><PaginationEllipsis /></PaginationItem>
+                      </>
+                    )}
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => Math.abs(currentPage - page) <= 2)
+                      .map(page => (
+                        <PaginationItem key={page}>
+                          <PaginationLink 
+                            href="#" 
+                            isActive={currentPage === page} 
+                            onClick={(e) => { e.preventDefault(); setPage(page); }}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                    ))}
+
+                    {currentPage < totalPages - 2 && (
+                      <>
+                        <PaginationItem><PaginationEllipsis /></PaginationItem>
+                        <PaginationItem>
+                          <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setPage(totalPages); }}>{totalPages}</PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          if (currentPage < totalPages) setPage(currentPage + 1); 
+                        }}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
                 <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                  Showing{' '}
-                  <span className="font-semibold text-zinc-900 dark:text-white">{paginatedItems.length}</span>
-                  {' '}of{' '}
-                  <span className="font-semibold text-zinc-900 dark:text-white">
-                    <AnimatedNumber value={filteredQuestions.length} />
-                  </span>
-                  {' '}problems
+                  Showing page <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span> of <span className="font-semibold text-zinc-900 dark:text-white">{totalPages}</span>
+                  {' '}—{' '}<span className="font-semibold text-zinc-900 dark:text-white">{filteredQuestions.length}</span> total problems
                 </p>
               </div>
             )}

@@ -19,6 +19,7 @@ import { useAutoResizeTextarea } from '@/hooks/use-auto-resize-textarea'
 import { cn } from '@/lib/utils'
 import { chatSession } from '@/utils/GeminiAIModel'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
+import { useQuestionsData } from '@/hooks/useQuestionsData'
 import ToggleButton from '@/app/_components/layout/AnimatedDarkModeToggle'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -488,8 +489,9 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 export default function RandomAITutorPage() {
   const router = useRouter()
 
-  // ── Zustand store ──────────────────────────────────────────────────────────
-  const { allQuestions } = useQuestionStore()
+  // ── Zustand store & Questions Data ─────────────────────────────────────────
+  const { data } = useQuestionsData()
+  const allQuestions = data?.qData.questions || []
 
   const [question, setQuestion]           = useState<Question | null>(null)
   const [messages, setMessages]           = useState<ChatMessage[]>([])
@@ -508,6 +510,7 @@ export default function RandomAITutorPage() {
   const pickNewQuestion = useCallback(() => {
     const q = pickRandom(allQuestions)
     if (!q) return
+    chatSession.reset()
     setQuestion(q)
     setUserInput('')
     setMessages([{

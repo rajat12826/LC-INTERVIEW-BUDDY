@@ -1,12 +1,19 @@
 // layout.tsx
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Toaster } from "sonner";
 import { ThemeProvider } from 'next-themes';
 import { ClerkProvider } from '@clerk/nextjs';
+import { QueryProvider } from '@/providers/QueryProvider';
+import { NavigationProvider } from '@/providers/NavigationProvider';
+import { GlobalInteractions } from '@/components/GlobalInteractions';
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], display: 'swap' })
+
+export const viewport: Viewport = {
+  themeColor: '#0F172A',
+}
 
 export const metadata: Metadata = {
   title: 'LeetCode Interview Prep | Ace Coding Interviews',
@@ -30,8 +37,6 @@ export const metadata: Metadata = {
     follow: true,
   },
 
-  themeColor: '#0F172A',
-
   openGraph: {
     title: 'LeetCode Interview Prep | Ace Coding Interviews',
     description:
@@ -52,7 +57,6 @@ export const metadata: Metadata = {
 
   twitter: {
     card: 'summary_large_image',
-    creator: '@yourtwitterhandle',
     title: 'LeetCode Interview Prep | Ace Coding Interviews',
     description:
       'Practice top coding interview questions and master DSA.',
@@ -69,26 +73,32 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-      <script
-  type="application/ld+json"
-  dangerouslySetInnerHTML={{
-    __html: JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Website",
-      name: "LeetCode Interview Prep",
-      url: "https://lc-interview-buddy.vercel.app/"
-    })
-  }}
-/>
-        
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Website",
+              name: "LeetCode Interview Prep",
+              url: "https://lc-interview-buddy.vercel.app/"
+            })
+          }}
+        />
+
         <link rel="icon" href="/logo.ico" type="image/x-icon" />
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class">
-          <div className="min-h-screen bg-gray-50 font-product">
+          <div className="min-h-screen bg-background font-product">
             <ClerkProvider>
-              {children}
-              <Toaster position="bottom-right" richColors />
+              <QueryProvider>
+                <NavigationProvider>
+                  <GlobalInteractions>
+                    {children}
+                    <Toaster position="bottom-right" richColors />
+                  </GlobalInteractions>
+                </NavigationProvider>
+              </QueryProvider>
             </ClerkProvider>
           </div>
         </ThemeProvider>

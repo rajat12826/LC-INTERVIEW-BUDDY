@@ -1,7 +1,9 @@
+# *
 User-agent: *
 Allow: /
-Allow: /subscription
-Disallow: /leetcode/
-Disallow: /api/
 
+# Host
+Host: https://lc-interview-buddy.vercel.app
+
+# Sitemaps
 Sitemap: https://lc-interview-buddy.vercel.app/sitemap.xml

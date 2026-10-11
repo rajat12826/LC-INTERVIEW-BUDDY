@@ -2,6 +2,7 @@
 "use client"
 import { useEffect, useState } from 'react'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
+import { useQuestionsData } from '@/hooks/useQuestionsData'
 
 type PremiumProblem = {
   id: string; // Extracted from the link for routing/identification
@@ -26,7 +27,8 @@ type PremiumProblem = {
 
 export default function useLoadPremiumProblems() {
 
-  const premiumQuestionsRaw = useQuestionStore((state) => state.premiumQuestions);
+  const { data } = useQuestionsData();
+  const premiumQuestionsRaw = data?.pData || [];
   const getQuestionIdFromUrl = useQuestionStore((state) => state.getQuestionIdFromUrl);
 
 

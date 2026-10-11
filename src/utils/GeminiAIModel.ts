@@ -2,51 +2,61 @@
 
 import axios from 'axios';
 
-const GROQ_API_KEY = process.env.GROQ || '';
-// console.log("groq",GROQ_API_KEY);
-
-const GROQ_BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
-
 // Mirrors the Gemini chatSession.sendMessage() API shape
-// so you only need to change the import, nothing else in your page
 class GroqChatSession {
   private history: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
-  async sendMessage(userMessage: string): Promise<{ response: { text: () => string } }> {
-    // Append the new user message to history
-    this.history.push({ role: 'user', content: userMessage });
-
-    const { data } = await axios.post(
-      GROQ_BASE_URL,
-      {
-        model: 'llama-3.3-70b-versatile',
-        messages: this.history,
-        temperature: 0.7,
-        max_tokens: 8192,
-        top_p: 0.95,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-        },
-      }
-    );
-
-    const assistantText: string = data.choices[0].message.content;
-
-    // Append assistant reply to history so future turns have context
-    this.history.push({ role: 'assistant', content: assistantText });
-
-    // Return the same shape Gemini returns: { response: { text() } }
-    return {
-      response: {
-        text: () => assistantText,
-      },
-    };
+  private mapModelName(uiModel: string): string {
+    switch (uiModel) {
+      case 'Claude 4.5 Sonnet': return 'qwen/qwen3.8-27b';
+      case 'GPT-5':             return 'openai/gpt-oss-120b';
+      case 'GPT-5-mini':        return 'openai/gpt-oss-20b';
+      case 'Gemini 3':          return 'openai/gpt-oss-120b';
+      default:                  return 'openai/gpt-oss-120b';
+    }
   }
 
-  // Optional: clear history to start a fresh conversation
+  // Set default to openai/gpt-oss-120b as a fast, high quality coding model
+  async sendMessage(userMessage: string, model: string = 'openai/gpt-oss-120b'): Promise<{ response: { text: () => string } }> {
+    const actualModel = this.mapModelName(model);
+
+    // 1. Check user's own key in localStorage (BYOK: Bring Your Own Key)
+    let userApiKey: string | undefined = undefined;
+    if (typeof window !== 'undefined') {
+      const userKey = localStorage.getItem('user_groq_api_key');
+      if (userKey && userKey.trim().length > 0) {
+        userApiKey = userKey.trim();
+      }
+    }
+
+    try {
+      // Dispatched securely to server-side API route.
+      // Private server fallback keys (GROQ_KEYS / GROQ_API_KEYS) stay safe on the server and are NEVER leaked to the client!
+      // Each request from the tutor pages contains the self-contained context and previous conversation.
+      const { data } = await axios.post('/api/chat', {
+        messages: [{ role: 'user', content: userMessage }],
+        model: actualModel,
+        userApiKey,
+      });
+
+      const assistantText: string = data.content;
+      this.history.push({ role: 'user', content: userMessage });
+      this.history.push({ role: 'assistant', content: assistantText });
+
+      return {
+        response: {
+          text: () => assistantText,
+        },
+      };
+    } catch (error: any) {
+      const errorMsg =
+        error?.response?.data?.error ||
+        error?.message ||
+        'Error contacting AI tutor. Please check your connection or add a key in Profile Settings.';
+      throw new Error(errorMsg);
+    }
+  }
+
   reset() {
     this.history = [];
   }

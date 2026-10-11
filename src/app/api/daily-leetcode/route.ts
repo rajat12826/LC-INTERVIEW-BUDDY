@@ -32,7 +32,14 @@ export async function GET() {
       'https://leetcode.com/graphql',
       { query: DAILY_LEETCODE_QUERY },
       {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Referer: 'https://leetcode.com/problemset/',
+          Origin: 'https://leetcode.com',
+          Accept: 'application/json',
+        },
       }
     );
 

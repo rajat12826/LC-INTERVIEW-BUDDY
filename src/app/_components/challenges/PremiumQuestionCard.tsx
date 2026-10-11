@@ -32,7 +32,10 @@ interface PremiumQuestionCardProps {
 
 const PremiumQuestionCard: FC<PremiumQuestionCardProps> = ({ question }) => {
   const router = useRouter()
-  const { markAsSolved, isSolved, setCurrentPQuestion, getQuestionIdFromUrl } = useQuestionStore()
+  const markAsSolved = useQuestionStore((state) => state.markAsSolved)
+  const isSolved = useQuestionStore((state) => state.isSolved)
+  const setCurrentPQuestion = useQuestionStore((state) => state.setCurrentPQuestion)
+  const getQuestionIdFromUrl = useQuestionStore((state) => state.getQuestionIdFromUrl)
 
   const solved = isSolved(question.title)
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)

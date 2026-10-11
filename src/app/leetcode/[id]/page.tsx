@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
+import { useQuestionById } from '@/hooks/useQuestionsData'
 import dynamic from 'next/dynamic'
 import { AnimatePresence, motion } from 'motion/react'
 import { ArrowRight, Bot, Check, ChevronDown, Paperclip } from 'lucide-react'
 
 import { chatSession } from '@/utils/GeminiAIModel'
+import { useChatHistory, ChatMessage } from '@/hooks/useChatHistory'
 import useMobile from '@/hooks/useMobile'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -21,6 +23,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { useAutoResizeTextarea } from '@/hooks/use-auto-resize-textarea'
 import { cn } from '@/lib/utils'
 import ToggleButton from '@/app/_components/layout/AnimatedDarkModeToggle'
+import { InterviewTimer } from '@/components/InterviewTimer'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
@@ -39,6 +47,8 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type ActiveTab = 'chat' | 'editor'
+
 type Question = {
   Difficulty: string
   Question: string
@@ -48,16 +58,7 @@ type Question = {
   Topics: string
 }
 
-interface ChatMessage {
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-  hasCode?: boolean
-}
-
-type ActiveTab = 'chat' | 'editor'
-
-// ─── AI Loading State (from AILoadingState component) ─────────────────────────
+// ─── Active Tab ───────────────────────────────────────────────────────────────
 
 const TASK_SEQUENCES = [
   {
@@ -138,6 +139,14 @@ const LoadingAnimation = ({ progress }: { progress: number }) => (
   </div>
 )
 
+const AIIcon = () => (
+  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center flex-shrink-0">
+    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white dark:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    </svg>
+  </div>
+)
+
 function AILoadingState() {
   const [sequenceIndex, setSequenceIndex] = useState(0)
   const [visibleLines, setVisibleLines] = useState<Array<{ text: string; number: number }>>([])
@@ -210,10 +219,10 @@ function AILoadingState() {
                 key={`${line.number}-${line.text}`}
                 className="flex h-[28px] items-center px-2"
               >
-                <div className="text-zinc-400 dark:text-zinc-600 pr-3 select-none w-6 text-right">
+                <div className="text-zinc-400 dark:text-zinc-500 pr-3 select-none w-6 text-right tabular-nums">
                   {line.number}
                 </div>
-                <div className="text-zinc-700 dark:text-zinc-300 flex-1 ml-1">
+                <div className="text-zinc-700 dark:text-zinc-300 flex-1 ml-1 font-medium">
                   {line.text}
                 </div>
               </div>
@@ -221,12 +230,7 @@ function AILoadingState() {
           </div>
 
           {/* Fade-out overlay */}
-          <div
-            className="absolute inset-0 pointer-events-none rounded-lg"
-            style={{
-              background: 'linear-gradient(to bottom, transparent 0%, transparent 40%, var(--fade-color, rgba(250,250,250,0.9)) 100%)',
-            }}
-          />
+          <div className="absolute inset-0 pointer-events-none rounded-lg bg-gradient-to-b from-transparent via-transparent to-zinc-50/95 dark:to-[#121215]/95" />
         </div>
       </div>
     </div>
@@ -411,6 +415,7 @@ function AIPromptInput({ value, onChange, onSend, isLoading, selectedModel, onMo
             {/* Right: send button */}
             <button
               aria-label="Send message"
+              title="Send message"
               type="button"
               onClick={onSend}
               disabled={!value.trim() || isLoading}
@@ -446,11 +451,26 @@ export default function AITutorPage() {
   const params = useParams()
   const { theme } = useTheme()
   const router = useRouter()
-  const { getQuestionById, currentQuestion } = useQuestionStore()
+  const currentQuestion = useQuestionStore((state) => state.currentQuestion)
   const mobile = useMobile()
+  const { question: fetchedQuestion, isLoading: isQuestionLoading } = useQuestionById(params.id as string)
 
   const [question, setQuestion] = useState<Question | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  
+  const { messages, setMessages, isLoaded } = useChatHistory(params.id as string, useCallback(() => {
+    const title = fetchedQuestion?.Question || 'Problem';
+    const difficulty = fetchedQuestion?.Difficulty || 'Medium';
+    const focusAreas = fetchedQuestion?.Topics
+      ? fetchedQuestion.Topics.split(',').map(t => `• ${t.trim()}`).join('\n')
+      : '• Core Algorithms\n• Problem Solving';
+
+    return {
+      role: 'assistant',
+      content: `Welcome to your AI coding session.\n\nI'm here to guide you through **"${title}"** — a **${difficulty}** level challenge.\n\n**Focus Areas:**\n${focusAreas}\n\n**How I can help:**\n• Problem analysis and approach design\n• Code review with constructive feedback\n• Time and space complexity analysis\n• Edge case identification\n\nReady to begin? Share your approach or ask for guidance.`,
+      timestamp: new Date(),
+    } as ChatMessage;
+  }, [fetchedQuestion?.Question, fetchedQuestion?.Difficulty, fetchedQuestion?.Topics]))
+
   const [userInput, setUserInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
@@ -561,18 +581,11 @@ export default function AITutorPage() {
   }
 
   useEffect(() => {
-    const questionId = params.id as string
-    const found = getQuestionById(questionId) || null
-    if (found) {
-      setQuestion(found)
+    if (fetchedQuestion) {
+      setQuestion(fetchedQuestion)
       setCode(getCodeTemplate(language))
-      setMessages([{
-        role: 'assistant',
-        content: `Welcome to your AI coding session.\n\nI'm here to guide you through **"${found.Question}"** — a **${found.Difficulty}** level challenge.\n\n**Focus Areas:**\n${found.Topics.split(',').map(t => `• ${t.trim()}`).join('\n')}\n\n**How I can help:**\n• Problem analysis and approach design\n• Code review with constructive feedback\n• Time and space complexity analysis\n• Edge case identification\n\nReady to begin? Share your approach or ask for guidance.`,
-        timestamp: new Date(),
-      }])
     }
-  }, [params.id, currentQuestion, getQuestionById, language])
+  }, [fetchedQuestion, language])
 
   useEffect(() => { scrollToBottom() }, [messages, isTyping])
 
@@ -606,7 +619,7 @@ ${messages.map(m => `${m.role}: ${m.content}`).join('\n')}
 
 Student's message: ${userInput}`
 
-      const result = await chatSession.sendMessage(context)
+      const result = await chatSession.sendMessage(context, selectedModel)
       const text = result.response.text()
 
       setTimeout(() => {
@@ -644,14 +657,6 @@ Student's message: ${userInput}`
     { text: 'Debug Code',        action: 'Can you help me debug and fix my code?'              },
     { text: 'Review Code',       action: 'Please review my code and provide feedback'          },
   ]
-
-  const AIIcon = () => (
-    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center flex-shrink-0">
-      <svg className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${theme === 'dark' ? 'text-blue-500' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-      </svg>
-    </div>
-  )
 
   if (!question) {
     return (
@@ -700,6 +705,7 @@ Student's message: ${userInput}`
                   </button>
                 ))}
               </div>
+              <InterviewTimer />
               <button onClick={() => setIsSidebarOpen(true)} className="xl:hidden p-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors" title="Quick Actions">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               </button>
@@ -771,13 +777,13 @@ Student's message: ${userInput}`
                     <div className="space-y-3">
                       <div>
                         <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">Language</label>
-                        <select value={language} onChange={e => handleLanguageChange(e.target.value)} className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all">
+                        <select value={language} onChange={e => handleLanguageChange(e.target.value)} aria-label="Select programming language" className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all">
                           {languageOptions.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                         </select>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">Theme</label>
-                        <select value={editorTheme} onChange={e => setEditorTheme(e.target.value)} className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all">
+                        <select value={editorTheme} onChange={e => setEditorTheme(e.target.value)} aria-label="Select editor theme" className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all">
                           <option value="vs-dark">Dark</option>
                           <option value="light">Light</option>
                           <option value="hc-black">High Contrast</option>
@@ -798,10 +804,12 @@ Student's message: ${userInput}`
 
             {/* Chat + Editor panels */}
             <div className="flex-1 flex flex-col min-h-0">
-              <div className={`flex-1 flex min-h-0 gap-6 ${layout === 'vertical' ? 'flex-col' : 'flex-col xl:flex-row'}`}>
 
-                {/* ── CHAT PANEL ── */}
-                <div className={`${activeTab === 'editor' ? 'hidden xl:flex' : 'flex'} ${layout === 'vertical' ? '' : 'xl:flex-1'} flex-col min-h-0`}>
+              {/* ── MOBILE: stacked tabs layout ── */}
+              <div className="xl:hidden flex-1 flex flex-col min-h-0">
+
+                {/* ── CHAT PANEL (mobile) ── */}
+                <div className={`${activeTab === 'editor' ? 'hidden' : 'flex'} flex-col min-h-0 flex-1`}>
                   <div
                     className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden flex flex-col bg-white dark:bg-zinc-950"
                     style={{ height: mobile ? 'calc(100vh - 280px)' : undefined, minHeight: mobile ? '400px' : '500px' }}
@@ -867,38 +875,45 @@ Student's message: ${userInput}`
                   </div>
                 </div>
 
-                {/* ── CODE EDITOR PANEL ── */}
-                <div className={`${activeTab === 'chat' ? 'hidden xl:flex' : 'flex'} ${layout === 'vertical' ? '' : 'xl:flex-1'} flex-col min-h-0`}>
+                {/* ── CODE EDITOR PANEL (mobile) ── */}
+                <div className={`${activeTab === 'chat' ? 'hidden' : 'flex'} flex-col min-h-0 flex-1`}>
                   <div
                     className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden flex flex-col bg-white dark:bg-zinc-950"
                     style={{ height: mobile ? 'calc(100vh - 280px)' : undefined, minHeight: mobile ? '400px' : '500px' }}
                   >
                     {/* Editor Header */}
                     <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex-shrink-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center flex-shrink-0">
-                            <svg className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${theme === 'dark' ? 'text-blue-500' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg className={`w-4 h-4 sm:w-5 sm:h-5 ${theme === 'dark' ? 'text-zinc-900' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                           </div>
                           <div>
                             <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Code Editor</h3>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 hidden sm:block">{languageOptions.find(l => l.value === language)?.label}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${isEditorReady ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                                {isEditorReady ? 'Ready' : 'Loading'}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 xl:hidden">
-                          <select value={language} onChange={e => handleLanguageChange(e.target.value)} className="text-xs px-2 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg max-w-[90px] sm:max-w-none">
+                        <div className="flex items-center flex-wrap gap-2">
+                          <select value={language} onChange={e => handleLanguageChange(e.target.value)} aria-label="Select programming language" className="text-xs px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 rounded-lg max-w-[110px] transition-colors outline-none cursor-pointer text-zinc-700 dark:text-zinc-300 font-medium shadow-sm">
                             {languageOptions.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                           </select>
-                          <button onClick={copyCodeToChat} disabled={!isEditorReady} className="p-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg disabled:opacity-50 flex-shrink-0" title="Send to Chat">
+                          <div className="flex items-center gap-1 bg-zinc-200/50 dark:bg-zinc-900/80 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                            <button onClick={() => { navigator.clipboard.writeText(code) }} className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-800 rounded-md transition-all flex items-center justify-center" title="Copy Code">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            </button>
+                            <button onClick={() => setCode(getCodeTemplate(language))} className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-800 rounded-md transition-all flex items-center justify-center" title="Reset Code">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            </button>
+                          </div>
+                          <button onClick={copyCodeToChat} disabled={!isEditorReady} className="px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors flex items-center gap-1.5 shadow-sm" title="Send to Chat">
+                            <span>Send to Chat</span>
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                           </button>
-                          <button onClick={() => setCode(getCodeTemplate(language))} className="p-1.5 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg flex-shrink-0" title="Reset">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                          </button>
-                        </div>
-                        <div className="hidden xl:flex items-center gap-1.5 px-2 py-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full">
-                          <div className={`w-1.5 h-1.5 rounded-full ${isEditorReady ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{isEditorReady ? 'Ready' : 'Loading'}</span>
                         </div>
                       </div>
                     </div>
@@ -921,6 +936,133 @@ Student's message: ${userInput}`
                 </div>
 
               </div>
+
+              {/* ── DESKTOP: resizable panels layout ── */}
+              <ResizablePanelGroup
+                orientation={layout === 'vertical' ? 'vertical' : 'horizontal'}
+                className="hidden xl:flex flex-1 min-h-0"
+              >
+                {/* ── CHAT PANEL (desktop) ── */}
+                <ResizablePanel defaultSize="50%" minSize="25%">
+                  <div
+                    className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden flex flex-col bg-white dark:bg-zinc-950 h-full"
+                  >
+                    {/* Chat Header */}
+                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex-shrink-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <AIIcon />
+                          <div>
+                            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">AI Mentor</h3>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 hidden sm:block">{selectedModel}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-100 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-900 rounded-full">
+                          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                          <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Online</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4 min-h-0">
+                      {messages.map((message, index) => (
+                        <div key={index} className={`flex gap-2 sm:gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          {message.role === 'assistant' && <AIIcon />}
+                          <div className={`max-w-[85%] sm:max-w-[75%] ${message.role === 'user' ? 'order-1' : ''}`}>
+                            <div className={`p-3 sm:p-4 rounded-lg ${message.role === 'user' ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900' : 'bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800'}`}>
+                              <div
+                                className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                                dangerouslySetInnerHTML={{ __html: message.role === 'assistant' ? formatMessageContent(message.content) : message.content.replace(/\n/g, '<br>') }}
+                              />
+                              <div className={`text-xs mt-2 ${message.role === 'user' ? 'text-zinc-400 dark:text-zinc-600' : 'text-zinc-500'}`}>
+                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          </div>
+                          {message.role === 'user' && (
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-700 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {(isLoading || isTyping) && <AILoadingState />}
+                      <div ref={messagesEndRef} />
+                    </div>
+                    {/* Input */}
+                    <div className="p-3 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 flex-shrink-0">
+                      <AIPromptInput
+                        value={userInput}
+                        onChange={setUserInput}
+                        onSend={sendMessage}
+                        isLoading={isLoading}
+                        selectedModel={selectedModel}
+                        onModelChange={setSelectedModel}
+                      />
+                    </div>
+                  </div>
+                </ResizablePanel>
+
+                <ResizableHandle withHandle />
+
+                {/* ── CODE EDITOR PANEL (desktop) ── */}
+                <ResizablePanel defaultSize="50%" minSize="20%">
+                  <div
+                    className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden flex flex-col bg-white dark:bg-zinc-950 h-full"
+                  >
+                    {/* Editor Header */}
+                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex-shrink-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg className={`w-4 h-4 sm:w-5 sm:h-5 ${theme === 'dark' ? 'text-zinc-900' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Code Editor</h3>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${isEditorReady ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                                {isEditorReady ? 'Ready' : 'Loading'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center flex-wrap gap-2">
+                          <select value={language} onChange={e => handleLanguageChange(e.target.value)} aria-label="Select programming language" className="text-xs px-2.5 py-1.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 rounded-lg max-w-[110px] transition-colors outline-none cursor-pointer text-zinc-700 dark:text-zinc-300 font-medium shadow-sm">
+                            {languageOptions.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+                          </select>
+                          <div className="flex items-center gap-1 bg-zinc-200/50 dark:bg-zinc-900/80 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                            <button onClick={() => { navigator.clipboard.writeText(code) }} className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-800 rounded-md transition-all flex items-center justify-center" title="Copy Code">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            </button>
+                            <button onClick={() => setCode(getCodeTemplate(language))} className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-800 rounded-md transition-all flex items-center justify-center" title="Reset Code">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            </button>
+                          </div>
+                          <button onClick={copyCodeToChat} disabled={!isEditorReady} className="px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors flex items-center gap-1.5 shadow-sm" title="Send to Chat">
+                            <span>Send to Chat</span>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div ref={editorContainerRef} className="flex-1 relative min-h-0">
+                      <MonacoEditor height="100%" language={language} value={code} onChange={v => setCode(v || '')} onMount={handleEditorDidMount} theme={editorTheme} />
+                    </div>
+                    <div className="px-4 sm:px-6 py-2 sm:py-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex-shrink-0">
+                      <div className="flex items-center justify-between text-xs text-zinc-500">
+                        <div className="flex items-center gap-2">
+                          <span>{isEditorReady ? 'Ready' : 'Loading'}</span>
+                          <span>·</span>
+                          <span><kbd className="px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-800 rounded font-mono">Ctrl+Enter</kbd> sends code</span>
+                        </div>
+                        <span>Auto-save enabled</span>
+                      </div>
+                    </div>
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+
             </div>
           </div>
         </div>
@@ -944,7 +1086,7 @@ Student's message: ${userInput}`
             </div>
             <div className="border-t border-zinc-200 dark:border-zinc-800 p-4 space-y-3 flex-shrink-0">
               <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Editor</h4>
-              <select value={language} onChange={e => handleLanguageChange(e.target.value)} className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+              <select value={language} onChange={e => handleLanguageChange(e.target.value)} aria-label="Select programming language" className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
                 {languageOptions.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
               </select>
               <button onClick={() => { copyCodeToChat(); setIsSidebarOpen(false) }} disabled={!isEditorReady} className="w-full px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">

@@ -148,6 +148,7 @@ const ChallengeFilters = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                aria-label="Search problems by title or topic"
                 className="w-full pl-11 pr-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200"
                 placeholder="Search by title or topic..."
               />
@@ -162,6 +163,7 @@ const ChallengeFilters = () => {
             <select
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
+              aria-label="Filter by difficulty level"
               className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200 cursor-pointer appearance-none"
               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25rem' }}
             >
@@ -182,6 +184,7 @@ const ChallengeFilters = () => {
             <select
               value={solved}
               onChange={(e) => setSolved(e.target.value as 'all' | 'solved' | 'unsolved')}
+              aria-label="Filter by problem completion status"
               className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200 cursor-pointer appearance-none"
               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25rem' }}
             >
@@ -205,6 +208,7 @@ const ChallengeFilters = () => {
                 placeholder="Search or select companies..."
                 value={companyInput}
                 onChange={(e) => setCompanyInput(e.target.value)}
+                aria-label="Search or select companies"
                 className="w-full px-4 py-3 text-sm font-medium bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-all duration-200"
               />
               {companyInput && filteredCompanies.length > 0 && (

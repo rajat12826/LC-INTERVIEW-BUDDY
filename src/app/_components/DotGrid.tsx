@@ -129,13 +129,20 @@ const DotGrid: React.FC<DotGridProps> = ({
     dotsRef.current = dots;
   }, [dotSize, gap]);
 
-  useEffect(() => {
-    if (!circlePath) return;
+  const isVisibleRef = useRef(true);
+  const canvasRectRef = useRef<{ left: number; top: number } | null>(null);
 
+  useEffect(() => {
     let rafId: number;
     const proxSq = proximity * proximity;
+    const radius = dotSize / 2;
 
     const draw = () => {
+      if (!isVisibleRef.current) {
+        rafId = requestAnimationFrame(draw);
+        return;
+      }
+
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -161,11 +168,10 @@ const DotGrid: React.FC<DotGridProps> = ({
           style = `rgb(${r},${g},${b})`;
         }
 
-        ctx.save();
-        ctx.translate(ox, oy);
         ctx.fillStyle = style;
-        ctx.fill(circlePath);
-        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(ox, oy, radius, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       rafId = requestAnimationFrame(draw);
@@ -173,25 +179,53 @@ const DotGrid: React.FC<DotGridProps> = ({
 
     draw();
     return () => cancelAnimationFrame(rafId);
-  }, [proximity, baseColor, activeRgb, baseRgb, circlePath]);
+  }, [proximity, baseColor, activeRgb, baseRgb, dotSize]);
 
   useEffect(() => {
     buildGrid();
+
+    const updateRect = () => {
+      if (canvasRef.current) {
+        const r = canvasRef.current.getBoundingClientRect();
+        canvasRectRef.current = { left: r.left, top: r.top };
+      }
+    };
+    updateRect();
+
+    const handleResize = () => {
+      buildGrid();
+      updateRect();
+    };
+
     let ro: ResizeObserver | null = null;
-    if ('ResizeObserver' in window) {
-      ro = new ResizeObserver(buildGrid);
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(handleResize);
       wrapperRef.current && ro.observe(wrapperRef.current);
     } else {
-      (window as Window).addEventListener('resize', buildGrid);
+      window.addEventListener('resize', handleResize);
     }
+
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined' && wrapperRef.current) {
+      io = new IntersectionObserver(([entry]) => {
+        isVisibleRef.current = entry.isIntersecting;
+      }, { threshold: 0.05 });
+      io.observe(wrapperRef.current);
+    }
+
+    window.addEventListener('scroll', updateRect, { passive: true });
+
     return () => {
       if (ro) ro.disconnect();
-      else window.removeEventListener('resize', buildGrid);
+      if (io) io.disconnect();
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', updateRect);
     };
   }, [buildGrid]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
+      if (!isVisibleRef.current) return;
       const now = performance.now();
       const pr = pointerRef.current;
       const dt = pr.lastTime ? now - pr.lastTime : 16;
@@ -213,7 +247,7 @@ const DotGrid: React.FC<DotGridProps> = ({
       pr.vy = vy;
       pr.speed = speed;
 
-      const rect = canvasRef.current!.getBoundingClientRect();
+      const rect = canvasRectRef.current || (canvasRef.current ? canvasRef.current.getBoundingClientRect() : { left: 0, top: 0 });
       pr.x = e.clientX - rect.left;
       pr.y = e.clientY - rect.top;
 
@@ -241,7 +275,15 @@ const DotGrid: React.FC<DotGridProps> = ({
     };
 
     const onClick = (e: MouseEvent) => {
-      const rect = canvasRef.current!.getBoundingClientRect();
+      if (!isVisibleRef.current) return;
+      // Do not trigger canvas shockwave when clicking UI buttons, links, inputs, or tabs
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('button, a, input, select, textarea, [role="button"], [role="tab"], .cursor-pointer')) {
+        return;
+      }
+
+      if (!canvasRef.current) return;
+      const rect = canvasRectRef.current || canvasRef.current.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
       for (const dot of dotsRef.current) {
@@ -270,7 +312,7 @@ const DotGrid: React.FC<DotGridProps> = ({
 
     const throttledMove = throttle(onMove, 50);
     window.addEventListener('mousemove', throttledMove, { passive: true });
-    window.addEventListener('click', onClick);
+    window.addEventListener('click', onClick, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', throttledMove);

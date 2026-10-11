@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
+import { usePremiumQuestionById } from '@/hooks/useQuestionsData'
 import dynamic from 'next/dynamic'
 import { AnimatePresence, motion } from 'motion/react'
 import { ArrowRight, Bot, Check, ChevronDown, Crown } from 'lucide-react'
 
 import { chatSession } from '@/utils/GeminiAIModel'
+import { useChatHistory, ChatMessage } from '@/hooks/useChatHistory'
 import useMobile from '@/hooks/useMobile'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -21,6 +23,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { useAutoResizeTextarea } from '@/hooks/use-auto-resize-textarea'
 import { cn } from '@/lib/utils'
 import ToggleButton from '@/app/_components/layout/AnimatedDarkModeToggle'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable'
+import { InterviewTimer } from '@/components/InterviewTimer'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
@@ -39,6 +47,8 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type ActiveTab = 'chat' | 'editor'
+
 type PQuestion = {
   title: string
   link: string
@@ -54,16 +64,7 @@ type PQuestion = {
   companies?: string
 }
 
-interface ChatMessage {
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-  hasCode?: boolean
-}
-
-type ActiveTab = 'chat' | 'editor'
-
-// ─── AI Loading State ─────────────────────────────────────────────────────────
+// ─── Active Tab ───────────────────────────────────────────────────────────────
 
 const TASK_SEQUENCES = [
   {
@@ -151,8 +152,8 @@ function AILoadingState() {
     <div className="flex gap-2 sm:gap-3">
       <AIIcon />
       <div className={`rounded-xl border border-zinc-200/60 dark:border-white/[0.06] bg-zinc-50/80 dark:bg-white/[0.03] backdrop-blur-sm p-3
-        shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_4px_16px_rgba(0,0,0,0.3)]">
-        <div className="flex items-center gap-2 mb-2`}>
+        shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_4px_16px_rgba(0,0,0,0.3)]`}>
+        <div className="flex items-center gap-2 mb-2">
           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
           <span className="text-[11px] font-medium tracking-wide text-zinc-500 dark:text-[#8A8F98]">{seq.status}...</span>
         </div>
@@ -160,17 +161,15 @@ function AILoadingState() {
           <div ref={containerRef} className="font-mono text-xs overflow-hidden w-full h-[84px] rounded-lg" style={{ scrollBehavior: 'smooth' }}>
             {lines.map(l => (
               <div key={`${l.number}-${l.text}`} className="flex h-[28px] items-center px-2">
-                <div className="text-zinc-400/50 dark:text-white/20 pr-3 select-none w-6 text-right">{l.number}</div>
-                <div className="text-zinc-700 dark:text-zinc-300 flex-1 ml-1">{l.text}</div>
+                <div className="text-zinc-400 dark:text-zinc-500 pr-3 select-none w-6 text-right tabular-nums">{l.number}</div>
+                <div className="text-zinc-700 dark:text-zinc-300 flex-1 ml-1 font-medium">{l.text}</div>
               </div>
             ))}
           </div>
-          <div className="absolute inset-0 pointer-events-none rounded-lg"
-            style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(249,250,251,0.95) 100%)' }}
-            data-dark-fade="true" />
+          <div className="absolute inset-0 pointer-events-none rounded-lg bg-gradient-to-b from-transparent via-transparent to-zinc-50/95 dark:to-[#121215]/95" />
         </div>
       </div>
-   
+    </div>
   )
 }
 
@@ -309,7 +308,7 @@ function AIPromptInput({ value, onChange, onSend, isLoading, selectedModel, onMo
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <button aria-label="Send message" type="button" onClick={onSend}
+        <button aria-label="Send message" title="Send message" type="button" onClick={onSend}
           disabled={!value.trim() || isLoading}
           className={cn(
             'relative rounded-lg px-3 py-1.5 text-xs font-semibold overflow-hidden',
@@ -364,11 +363,19 @@ export default function PremiumAITutorPage() {
   const params = useParams()
   const { theme } = useTheme()
   const router = useRouter()
-  const { getQuestionPById } = useQuestionStore()
+  const { question: fetchedQuestion, isLoading: isQuestionLoading } = usePremiumQuestionById(params.id as string)
   const mobile = useMobile()
 
   const [question, setQuestion] = useState<PQuestion | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  
+  const { messages, setMessages, isLoaded } = useChatHistory(params.id as string, useCallback(() => {
+    return {
+      role: 'assistant',
+      content: `Welcome to your Premium AI coding session.\n\nI'm here to guide you through **"${fetchedQuestion?.title}"** — a **${fetchedQuestion?.difficulty}** level premium challenge.\n\n**How I can help:**\n• Problem analysis and approach design\n• Code review with constructive feedback\n• Time and space complexity analysis\n• Edge case identification\n\nReady to begin? Share your approach or ask for guidance.`,
+      timestamp: new Date(),
+    } as ChatMessage;
+  }, [fetchedQuestion?.title, fetchedQuestion?.difficulty]))
+
   const [userInput, setUserInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
@@ -470,20 +477,11 @@ export default function PremiumAITutorPage() {
   }
 
   useEffect(() => {
-    const found = getQuestionPById(params.id as string) || null
-    if (found) {
-      setQuestion(found)
+    if (fetchedQuestion) {
+      setQuestion(fetchedQuestion)
       setCode(getCodeTemplate(language))
-      const ts = Array.isArray(found.topics)
-        ? found.topics.map((t: any) => `• ${t.trim()}`).join('\n')
-        : found.topics ? `• ${found.topics.trim()}` : '• No specific topics'
-      setMessages([{
-        role: 'assistant',
-        content: `Welcome to your Premium AI coding session.\n\nI'm here to guide you through **"${found.title}"** — a **${found.difficulty}** level challenge.\n\n**Focus Areas:**\n${ts}\n\n**How I can help:**\n• Problem analysis and approach design\n• Code review with constructive feedback\n• Time and space complexity analysis\n• Edge case identification\n\nReady to begin? Share your approach or ask for guidance.`,
-        timestamp: new Date(),
-      }])
     }
-  }, [params.id, getQuestionPById, language])
+  }, [fetchedQuestion, language])
 
   useEffect(() => { scrollToBottom() }, [messages, isTyping])
 
@@ -502,7 +500,8 @@ export default function PremiumAITutorPage() {
     try {
       const topicsStr = Array.isArray(question.topics) ? question.topics.join(', ') : (question.topics || 'Unknown')
       const result = await chatSession.sendMessage(
-        `You are an expert AI tutor for "${question.title}" (${question.difficulty}, topics: ${topicsStr}). URL: ${question.link}\nGuide the student. Use markdown formatting. Previous:\n${messages.map(m => `${m.role}: ${m.content}`).join('\n')}\nStudent: ${userInput}`
+        `You are an expert AI tutor for "${question.title}" (${question.difficulty}, topics: ${topicsStr}). URL: ${question.link}\nGuide the student. Use markdown formatting. Previous:\n${messages.map(m => `${m.role}: ${m.content}`).join('\n')}\nStudent: ${userInput}`,
+        selectedModel
       )
       setTimeout(() => {
         setMessages(prev => [...prev, { role: 'assistant', content: result.response.text(), timestamp: new Date() }])
@@ -632,6 +631,7 @@ export default function PremiumAITutorPage() {
                   </button>
                 ))}
               </div>
+              <InterviewTimer />
 
               {/* Mobile quick actions trigger */}
               <button onClick={() => setIsSidebarOpen(true)}
@@ -727,135 +727,157 @@ export default function PremiumAITutorPage() {
                   </div>
                 </div>
                 <button onClick={() => setShowProblemDetails(!showProblemDetails)}
-                  className={`flex-shrink-0 p-2 rounded-xl
-                    bg-zinc-100 dark:bg-white/[0.04]
-                    border border-zinc-200/60 dark:border-white/[0.06]
-                    hover:bg-zinc-200 dark:hover:bg-white/[0.08]
-                    text-zinc-500 dark:text-[#8A8F98]
-                    transition-all duration-150`}>
-                  <svg className={`w-4 h-4 transition-transform duration-200 ${showProblemDetails ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold
+                    ${showProblemDetails ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-zinc-100 dark:bg-white/[0.04] text-zinc-600 dark:text-[#8A8F98] hover:bg-zinc-200 dark:hover:bg-white/[0.08] hover:text-zinc-900 dark:hover:text-[#EDEDEF]'}
+                    border border-zinc-200/60 dark:border-white/[0.06] transition-all duration-200`}>
+                  <span className="hidden sm:inline">{showProblemDetails ? 'Hide Details' : 'View Details'}</span>
+                  <svg className={`w-4 h-4 transition-transform duration-300 ${showProblemDetails ? 'rotate-180 text-amber-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
               </div>
             </div>
 
-            {/* Expanded Details */}
-            {showProblemDetails && (
-              <div className="border-t border-zinc-200/60 dark:border-white/[0.06] bg-zinc-50/50 dark:bg-white/[0.01]">
-                <div className="p-4 sm:p-5 lg:p-6 space-y-5">
-                  {question.description && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-0.5 h-4 rounded-full bg-gradient-to-b from-amber-500 to-orange-500" />
-                        <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF]">Description</h3>
-                      </div>
-                      <p className="text-sm text-zinc-600 dark:text-[#8A8F98] leading-relaxed pl-3">{question.description}</p>
-                    </div>
-                  )}
-                  {question.illustration && (
-                    <div className="pl-3">
-                      <img src={question.illustration} alt="Problem illustration" className="max-w-full h-auto rounded-xl border border-zinc-200 dark:border-white/[0.06]" />
-                    </div>
-                  )}
-                  {question.steps && question.steps.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-0.5 h-4 rounded-full bg-gradient-to-b from-emerald-500 to-teal-500" />
-                        <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF]">Steps</h3>
-                      </div>
-                      <ol className="space-y-2 pl-3">
-                        {question.steps.map((step, i) => (
-                          <li key={i} className="flex items-start gap-2.5">
-                            <span className={`flex items-center justify-center w-5 h-5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white text-[10px] font-bold flex-shrink-0 mt-0.5 shadow-[0_2px_4px_rgba(245,158,11,0.2)]`}>{i + 1}</span>
-                            <span className="text-sm text-zinc-600 dark:text-[#8A8F98] leading-relaxed">{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-                  {question.key_points && question.key_points.length > 0 && (
-                    <div className={`rounded-xl overflow-hidden border border-amber-200/60 dark:border-amber-500/[0.15]
-                      bg-amber-50/50 dark:bg-amber-500/[0.04]`}>
-                      <div className="h-px bg-gradient-to-r from-amber-500/30 via-orange-500/20 to-transparent" />
-                      <div className="px-4 py-3">
-                        <div className="flex items-center gap-2 mb-2.5">
-                          <svg className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                          <h4 className="text-xs font-semibold text-amber-900 dark:text-amber-300 uppercase tracking-wide">Key Points</h4>
-                        </div>
-                        <ul className="space-y-1.5">
-                          {question.key_points.map((pt, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-amber-800 dark:text-amber-300/80">
-                              <span className="w-1 h-1 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
-                              {pt}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  )}
-                  {question.note && (
-                    <div className={`rounded-xl overflow-hidden border border-blue-200/60 dark:border-blue-500/[0.12]
-                      bg-blue-50/50 dark:bg-blue-500/[0.04]`}>
-                      <div className="px-4 py-3">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <svg className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                          <h4 className="text-xs font-semibold text-blue-900 dark:text-blue-300 uppercase tracking-wide">Note</h4>
-                        </div>
-                        <p className="text-sm text-blue-800 dark:text-blue-300/80">{question.note}</p>
-                      </div>
-                    </div>
-                  )}
-                  {question.examples && question.examples.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-0.5 h-4 rounded-full bg-gradient-to-b from-purple-500 to-pink-500" />
-                        <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF]">Examples</h3>
-                      </div>
-                      <div className="space-y-3 pl-3">
-                        {question.examples.map((ex, i) => (
-                          <div key={i} className="rounded-xl border border-zinc-200/60 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] overflow-hidden">
-                            <div className="px-3 py-2 border-b border-zinc-100 dark:border-white/[0.04] bg-zinc-50 dark:bg-white/[0.02]">
-                              <span className="text-xs font-semibold text-zinc-600 dark:text-[#8A8F98]">Example {i + 1}</span>
+            {/* Expanded Details with Animation */}
+            <AnimatePresence initial={false}>
+              {showProblemDetails && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="overflow-hidden"
+                >
+                  <div className="border-t border-zinc-200/60 dark:border-white/[0.06] bg-zinc-50/30 dark:bg-white/[0.01]">
+                    <div className="p-4 sm:p-5 lg:p-6">
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
+                        {/* LEFT COLUMN: Description, Illustration, Steps */}
+                        <div className="space-y-6">
+                          {question.description && (
+                            <div>
+                              <div className="flex items-center gap-2 mb-2.5">
+                                <div className="w-1 h-4 rounded-full bg-gradient-to-b from-amber-500 to-orange-500" />
+                                <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF]">Description</h3>
+                              </div>
+                              <p className="text-sm text-zinc-600 dark:text-[#8A8F98] leading-relaxed pl-3 max-w-prose">{question.description}</p>
                             </div>
-                            <div className="p-3 space-y-2">
-                              {ex.image && <img src={ex.image} alt="" className="max-w-full h-auto rounded-lg border border-zinc-200 dark:border-white/[0.06] mb-2" />}
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="rounded-lg bg-zinc-50 dark:bg-white/[0.03] border border-zinc-200/60 dark:border-white/[0.04] p-2">
-                                  <div className="text-[10px] font-semibold text-zinc-400 dark:text-white/30 uppercase tracking-wide mb-1">Input</div>
-                                  <code className="text-xs font-mono text-zinc-800 dark:text-zinc-300">{ex.input}</code>
+                          )}
+                          
+                          {question.illustration && (
+                            <div className="pl-3">
+                              <img src={question.illustration} alt="Problem illustration" className="max-w-full h-auto rounded-xl border border-zinc-200 dark:border-white/[0.06] shadow-sm" />
+                            </div>
+                          )}
+
+                          {question.steps && question.steps.length > 0 && (
+                            <div>
+                              <div className="flex items-center gap-2 mb-2.5">
+                                <div className="w-1 h-4 rounded-full bg-gradient-to-b from-emerald-500 to-teal-500" />
+                                <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF]">Steps</h3>
+                              </div>
+                              <ol className="space-y-2.5 pl-3">
+                                {question.steps.map((step, i) => (
+                                  <li key={i} className="flex items-start gap-3 bg-white dark:bg-white/[0.02] p-2.5 rounded-xl border border-zinc-100 dark:border-white/[0.04]">
+                                    <span className={`flex items-center justify-center w-5 h-5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white text-[10px] font-bold flex-shrink-0 mt-0.5 shadow-[0_2px_4px_rgba(245,158,11,0.2)]`}>{i + 1}</span>
+                                    <span className="text-sm text-zinc-600 dark:text-[#8A8F98] leading-relaxed">{step}</span>
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* RIGHT COLUMN: Examples, Notes, Constraints, Key Points */}
+                        <div className="space-y-6">
+                          {question.examples && question.examples.length > 0 && (
+                            <div>
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-1 h-4 rounded-full bg-gradient-to-b from-purple-500 to-pink-500" />
+                                <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF]">Examples</h3>
+                              </div>
+                              <div className="space-y-4 pl-3">
+                                {question.examples.map((ex, i) => (
+                                  <div key={i} className="rounded-xl border border-zinc-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0a0a0c] shadow-sm overflow-hidden">
+                                    <div className="px-3.5 py-2 border-b border-zinc-100 dark:border-white/[0.04] bg-zinc-50 dark:bg-white/[0.02] flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-white/20" />
+                                      <span className="text-xs font-semibold text-zinc-600 dark:text-[#8A8F98] uppercase tracking-wider">Example {i + 1}</span>
+                                    </div>
+                                    <div className="p-3.5 space-y-3">
+                                      {ex.image && <img src={ex.image} alt="" className="max-w-full h-auto rounded-lg border border-zinc-200 dark:border-white/[0.06] mb-2" />}
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="rounded-lg bg-zinc-50/50 dark:bg-white/[0.02] border border-zinc-200/60 dark:border-white/[0.04] p-2.5">
+                                          <div className="text-[10px] font-semibold text-zinc-400 dark:text-white/30 uppercase tracking-widest mb-1.5">Input</div>
+                                          <code className="text-[13px] font-mono text-zinc-800 dark:text-zinc-300">{ex.input}</code>
+                                        </div>
+                                        <div className="rounded-lg bg-zinc-50/50 dark:bg-white/[0.02] border border-zinc-200/60 dark:border-white/[0.04] p-2.5">
+                                          <div className="text-[10px] font-semibold text-zinc-400 dark:text-white/30 uppercase tracking-widest mb-1.5">Output</div>
+                                          <code className="text-[13px] font-mono text-zinc-800 dark:text-zinc-300">{ex.output}</code>
+                                        </div>
+                                      </div>
+                                      {ex.explanation && (
+                                        <div className="pt-2 border-t border-zinc-100 dark:border-white/[0.04]">
+                                          <p className="text-[13px] text-zinc-500 dark:text-[#8A8F98] leading-relaxed"><span className="font-semibold text-zinc-700 dark:text-[#EDEDEF]">Explanation:</span> {ex.explanation}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-1 gap-6 pl-3">
+                            {question.constraints && question.constraints.length > 0 && (
+                              <div>
+                                <div className="flex items-center gap-2 mb-2.5">
+                                  <div className="w-1 h-4 rounded-full bg-gradient-to-b from-rose-500 to-red-500" />
+                                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF]">Constraints</h3>
                                 </div>
-                                <div className="rounded-lg bg-zinc-50 dark:bg-white/[0.03] border border-zinc-200/60 dark:border-white/[0.04] p-2">
-                                  <div className="text-[10px] font-semibold text-zinc-400 dark:text-white/30 uppercase tracking-wide mb-1">Output</div>
-                                  <code className="text-xs font-mono text-zinc-800 dark:text-zinc-300">{ex.output}</code>
+                                <div className="flex flex-wrap gap-2">
+                                  {question.constraints.map((c, i) => (
+                                    <div key={i} className="flex items-center gap-1.5 bg-zinc-100/80 dark:bg-white/[0.04] border border-zinc-200/60 dark:border-white/[0.06] px-2.5 py-1 rounded-lg">
+                                      <svg className="w-3.5 h-3.5 text-rose-500 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                      <code className="text-xs font-mono text-zinc-700 dark:text-zinc-300">{c}</code>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                              {ex.explanation && <p className="text-xs text-zinc-500 dark:text-[#8A8F98] leading-relaxed">{ex.explanation}</p>}
-                            </div>
+                            )}
+
+                            {question.note && (
+                              <div className="rounded-xl border border-blue-200/60 dark:border-blue-500/[0.12] bg-blue-50/50 dark:bg-blue-500/[0.04] p-3.5 shadow-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                  <h4 className="text-xs font-semibold text-blue-900 dark:text-blue-300 uppercase tracking-widest">Note</h4>
+                                </div>
+                                <p className="text-sm text-blue-800 dark:text-blue-300/80 leading-relaxed">{question.note}</p>
+                              </div>
+                            )}
+
+                            {question.key_points && question.key_points.length > 0 && (
+                              <div className="rounded-xl border border-amber-200/60 dark:border-amber-500/[0.15] bg-amber-50/50 dark:bg-amber-500/[0.04] p-3.5 shadow-sm">
+                                <div className="flex items-center gap-2 mb-2.5">
+                                  <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                  <h4 className="text-xs font-semibold text-amber-900 dark:text-amber-300 uppercase tracking-widest">Key Points</h4>
+                                </div>
+                                <ul className="space-y-2">
+                                  {question.key_points.map((pt, i) => (
+                                    <li key={i} className="flex items-start gap-2.5 text-sm text-amber-800 dark:text-amber-300/80">
+                                      <span className="w-1 h-1 rounded-full bg-amber-500 mt-2 flex-shrink-0 opacity-80" />
+                                      <span className="leading-relaxed">{pt}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
-                        ))}
+                        </div>
                       </div>
                     </div>
-                  )}
-                  {question.constraints && question.constraints.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-0.5 h-4 rounded-full bg-gradient-to-b from-rose-500 to-red-500" />
-                        <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF]">Constraints</h3>
-                      </div>
-                      <ul className="space-y-1.5 pl-3">
-                        {question.constraints.map((c, i) => (
-                          <li key={i} className="flex items-center gap-2">
-                            <svg className="w-3 h-3 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            <code className="text-xs bg-zinc-100 dark:bg-white/[0.04] border border-zinc-200/60 dark:border-white/[0.06] px-2 py-0.5 rounded-md font-mono text-zinc-700 dark:text-zinc-300">{c}</code>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -901,6 +923,7 @@ export default function PremiumAITutorPage() {
                       <div>
                         <label className="block text-[11px] font-medium text-zinc-600 dark:text-[#8A8F98] mb-1.5">Language</label>
                         <select value={language} onChange={e => handleLanguageChange(e.target.value)}
+                          aria-label="Select programming language"
                           className="w-full px-2.5 py-1.5 text-xs bg-zinc-50 dark:bg-white/[0.04] border border-zinc-200/60 dark:border-white/[0.08] rounded-lg text-zinc-800 dark:text-[#EDEDEF] focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all">
                           {languageOptions.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                         </select>
@@ -908,6 +931,7 @@ export default function PremiumAITutorPage() {
                       <div>
                         <label className="block text-[11px] font-medium text-zinc-600 dark:text-[#8A8F98] mb-1.5">Theme</label>
                         <select value={editorTheme} onChange={e => setEditorTheme(e.target.value)}
+                          aria-label="Select editor theme"
                           className="w-full px-2.5 py-1.5 text-xs bg-zinc-50 dark:bg-white/[0.04] border border-zinc-200/60 dark:border-white/[0.08] rounded-lg text-zinc-800 dark:text-[#EDEDEF] focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all">
                           <option value="vs-dark">Dark</option>
                           <option value="light">Light</option>
@@ -924,6 +948,16 @@ export default function PremiumAITutorPage() {
                           active:scale-[0.98] transition-all duration-150`}>
                         <span className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                         Send Code to AI
+                      </button>
+                      <button onClick={() => navigator.clipboard.writeText(code)}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-medium
+                          bg-zinc-50 dark:bg-white/[0.04]
+                          text-zinc-700 dark:text-[#8A8F98]
+                          border border-zinc-200/60 dark:border-white/[0.06]
+                          hover:bg-zinc-100 dark:hover:bg-white/[0.08]
+                          hover:text-zinc-900 dark:hover:text-[#EDEDEF]
+                          transition-all duration-150`}>
+                        Copy Code
                       </button>
                       <button onClick={() => setCode(getCodeTemplate(language))}
                         className={`w-full px-3 py-2 rounded-xl text-xs font-medium
@@ -949,10 +983,12 @@ export default function PremiumAITutorPage() {
 
             {/* ── Chat + Editor ── */}
             <div className="flex-1 flex flex-col min-h-0">
-              <div className={`flex-1 flex min-h-0 gap-4 sm:gap-5 ${layout === 'vertical' ? 'flex-col' : 'flex-col xl:flex-row'}`}>
 
-                {/* ── CHAT PANEL ── */}
-                <div className={`${activeTab === 'editor' ? 'hidden xl:flex' : 'flex'} ${layout === 'vertical' ? '' : 'xl:flex-1'} flex-col min-h-0`}>
+              {/* ── MOBILE: stacked tabs layout ── */}
+              <div className="xl:hidden flex-1 flex flex-col min-h-0">
+
+                {/* ── CHAT PANEL (mobile) ── */}
+                <div className={`${activeTab === 'editor' ? 'hidden' : 'flex'} flex-col min-h-0 flex-1`}>
                   <Panel className={cn(mobile ? 'h-[calc(100vh-280px)] min-h-[400px]' : 'min-h-[500px]')}>
                     {/* Chat Header */}
                     <PanelHeader>
@@ -1017,46 +1053,53 @@ export default function PremiumAITutorPage() {
                   </Panel>
                 </div>
 
-                {/* ── CODE EDITOR PANEL ── */}
-                <div className={`${activeTab === 'chat' ? 'hidden xl:flex' : 'flex'} ${layout === 'vertical' ? '' : 'xl:flex-1'} flex-col min-h-0`}>
+                {/* ── CODE EDITOR PANEL (mobile) ── */}
+                <div className={`${activeTab === 'chat' ? 'hidden' : 'flex'} flex-col min-h-0 flex-1`}>
                   <Panel className={cn(mobile ? 'h-[calc(100vh-280px)] min-h-[400px]' : 'min-h-[500px]')}>
                     {/* Editor Header */}
                     <PanelHeader>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex-shrink-0
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex-shrink-0 shadow-sm
                             bg-zinc-900 dark:bg-white/[0.08]
                             border border-zinc-700/50 dark:border-white/[0.08]
                             flex items-center justify-center`}>
-                            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                           </div>
                           <div>
                             <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF] tracking-tight">Code Editor</h3>
-                            <p className="text-[11px] text-zinc-500 dark:text-[#8A8F98] hidden sm:block">{languageOptions.find(l => l.value === language)?.label}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${isEditorReady ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                              <span className="text-[11px] font-medium text-zinc-500 dark:text-[#8A8F98] uppercase tracking-wide">
+                                {isEditorReady ? 'Ready' : 'Loading'}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        {/* Mobile editor controls */}
-                        <div className="flex items-center gap-1.5 xl:hidden">
+                        <div className="flex items-center flex-wrap gap-2">
                           <select value={language} onChange={e => handleLanguageChange(e.target.value)}
-                            className="text-xs px-2 py-1.5 bg-zinc-50 dark:bg-white/[0.04] border border-zinc-200/60 dark:border-white/[0.08] rounded-lg text-zinc-800 dark:text-[#EDEDEF] max-w-[90px] sm:max-w-none focus:outline-none">
+                            aria-label="Select programming language"
+                            className="text-xs px-2.5 py-1.5 bg-white dark:bg-[#0a0a0c] border border-zinc-200/60 dark:border-white/[0.08] hover:border-zinc-300 dark:hover:border-white/[0.12] rounded-lg text-zinc-800 dark:text-[#EDEDEF] max-w-[110px] transition-colors outline-none cursor-pointer font-medium shadow-sm">
                             {languageOptions.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                           </select>
-                          <button onClick={copyCodeToChat} disabled={!isEditorReady}
-                            className={`p-1.5 rounded-lg bg-gradient-to-b from-amber-500 to-orange-600 text-white disabled:opacity-40
-                              shadow-[0_0_0_1px_rgba(245,158,11,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]`}>
+                          <div className="flex items-center gap-1 bg-zinc-100/80 dark:bg-white/[0.03] p-1 rounded-lg border border-zinc-200/60 dark:border-white/[0.06]">
+                            <button onClick={() => navigator.clipboard.writeText(code)} title="Copy Code"
+                              className="p-1.5 rounded-md text-zinc-500 dark:text-[#8A8F98] hover:bg-white dark:hover:bg-white/[0.08] hover:text-zinc-900 dark:hover:text-[#EDEDEF] transition-all flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            </button>
+                            <button onClick={() => setCode(getCodeTemplate(language))} title="Reset Code"
+                              className="p-1.5 rounded-md text-zinc-500 dark:text-[#8A8F98] hover:bg-white dark:hover:bg-white/[0.08] hover:text-zinc-900 dark:hover:text-[#EDEDEF] transition-all flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            </button>
+                          </div>
+                          <button onClick={copyCodeToChat} disabled={!isEditorReady} title="Send to Chat"
+                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all shadow-sm
+                              bg-gradient-to-b from-amber-500 to-orange-600 text-white
+                              hover:shadow-[0_0_0_1px_rgba(245,158,11,0.4),0_4px_16px_rgba(245,158,11,0.25)]
+                              disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none`}>
+                            <span>Send to Chat</span>
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                           </button>
-                          <button onClick={() => setCode(getCodeTemplate(language))}
-                            className="p-1.5 rounded-lg border border-zinc-200/60 dark:border-white/[0.08] text-zinc-500 dark:text-[#8A8F98] hover:bg-zinc-100 dark:hover:bg-white/[0.05]">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                          </button>
-                        </div>
-                        {/* Desktop ready indicator */}
-                        <div className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full
-                          bg-zinc-100 dark:bg-white/[0.04]
-                          border border-zinc-200/60 dark:border-white/[0.06]`}>
-                          <div className={`w-1.5 h-1.5 rounded-full ${isEditorReady ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
-                          <span className="text-[11px] font-medium text-zinc-600 dark:text-[#8A8F98]">{isEditorReady ? 'Ready' : 'Loading'}</span>
                         </div>
                       </div>
                     </PanelHeader>
@@ -1081,6 +1124,142 @@ export default function PremiumAITutorPage() {
                 </div>
 
               </div>
+
+              {/* ── DESKTOP: resizable panels layout ── */}
+              <ResizablePanelGroup
+                orientation={layout === 'vertical' ? 'vertical' : 'horizontal'}
+                className="hidden xl:flex flex-1 min-h-0"
+              >
+                {/* ── CHAT PANEL (desktop) ── */}
+                <ResizablePanel defaultSize="50%" minSize="25%">
+                  <Panel className="h-full">
+                    <PanelHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <AIIcon />
+                          <div>
+                            <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF] tracking-tight">Premium AI Mentor</h3>
+                            <p className="text-[11px] text-zinc-500 dark:text-[#8A8F98] hidden sm:block">{selectedModel}</p>
+                          </div>
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                          bg-gradient-to-r from-amber-500/10 to-orange-500/10
+                          dark:from-amber-500/[0.08] dark:to-orange-500/[0.06]
+                          border border-amber-500/20 dark:border-amber-500/[0.15]`}>
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">Online</span>
+                        </div>
+                      </div>
+                    </PanelHeader>
+                    <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4 min-h-0">
+                      {messages.map((message, index) => (
+                        <div key={index} className={`flex gap-2 sm:gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          {message.role === 'assistant' && <AIIcon />}
+                          <div className={`max-w-[85%] sm:max-w-[75%] ${message.role === 'user' ? 'order-1' : ''}`}>
+                            <div className={`p-3 sm:p-4 rounded-xl ${
+                              message.role === 'user'
+                                ? 'bg-gradient-to-b from-amber-500 to-orange-600 text-white'
+                                : 'bg-zinc-50 dark:bg-white/[0.04] text-zinc-900 dark:text-[#EDEDEF] border border-zinc-200/60 dark:border-white/[0.06]'
+                            }`}>
+                              <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                                dangerouslySetInnerHTML={{ __html: message.role === 'assistant' ? formatMessageContent(message.content) : message.content.replace(/\n/g, '<br>') }}
+                              />
+                              <div className={`text-xs mt-2 ${message.role === 'user' ? 'text-amber-100/70' : 'text-zinc-400 dark:text-white/25'}`}>
+                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          </div>
+                          {message.role === 'user' && (
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200/60 dark:border-white/[0.06] flex items-center justify-center flex-shrink-0">
+                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500 dark:text-[#8A8F98]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {(isLoading || isTyping) && <AILoadingState />}
+                      <div ref={messagesEndRef} />
+                    </div>
+                    <div className="p-3 sm:p-4 border-t border-zinc-200/60 dark:border-white/[0.06] flex-shrink-0">
+                      <AIPromptInput
+                        value={userInput}
+                        onChange={setUserInput}
+                        onSend={sendMessage}
+                        isLoading={isLoading}
+                        selectedModel={selectedModel}
+                        onModelChange={setSelectedModel}
+                      />
+                    </div>
+                  </Panel>
+                </ResizablePanel>
+
+                <ResizableHandle withHandle />
+
+                {/* ── CODE EDITOR PANEL (desktop) ── */}
+                <ResizablePanel defaultSize="50%" minSize="20%">
+                  <Panel className="h-full">
+                    <PanelHeader>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex-shrink-0 shadow-sm
+                            bg-zinc-900 dark:bg-white/[0.08]
+                            border border-zinc-700/50 dark:border-white/[0.08]
+                            flex items-center justify-center`}>
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold text-zinc-900 dark:text-[#EDEDEF] tracking-tight">Code Editor</h3>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <div className={`w-1.5 h-1.5 rounded-full ${isEditorReady ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                              <span className="text-[11px] font-medium text-zinc-500 dark:text-[#8A8F98] uppercase tracking-wide">
+                                {isEditorReady ? 'Ready' : 'Loading'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center flex-wrap gap-2">
+                          <select value={language} onChange={e => handleLanguageChange(e.target.value)}
+                            aria-label="Select programming language"
+                            className="text-xs px-2.5 py-1.5 bg-white dark:bg-[#0a0a0c] border border-zinc-200/60 dark:border-white/[0.08] hover:border-zinc-300 dark:hover:border-white/[0.12] rounded-lg text-zinc-800 dark:text-[#EDEDEF] max-w-[110px] transition-colors outline-none cursor-pointer font-medium shadow-sm">
+                            {languageOptions.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+                          </select>
+                          <div className="flex items-center gap-1 bg-zinc-100/80 dark:bg-white/[0.03] p-1 rounded-lg border border-zinc-200/60 dark:border-white/[0.06]">
+                            <button onClick={() => navigator.clipboard.writeText(code)} title="Copy Code"
+                              className="p-1.5 rounded-md text-zinc-500 dark:text-[#8A8F98] hover:bg-white dark:hover:bg-white/[0.08] hover:text-zinc-900 dark:hover:text-[#EDEDEF] transition-all flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            </button>
+                            <button onClick={() => setCode(getCodeTemplate(language))} title="Reset Code"
+                              className="p-1.5 rounded-md text-zinc-500 dark:text-[#8A8F98] hover:bg-white dark:hover:bg-white/[0.08] hover:text-zinc-900 dark:hover:text-[#EDEDEF] transition-all flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            </button>
+                          </div>
+                          <button onClick={copyCodeToChat} disabled={!isEditorReady} title="Send to Chat"
+                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all shadow-sm
+                              bg-gradient-to-b from-amber-500 to-orange-600 text-white
+                              hover:shadow-[0_0_0_1px_rgba(245,158,11,0.4),0_4px_16px_rgba(245,158,11,0.25)]
+                              disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none`}>
+                            <span>Send to Chat</span>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </PanelHeader>
+                    <div ref={editorContainerRef} className="flex-1 relative min-h-0">
+                      <MonacoEditor height="100%" language={language} value={code} onChange={v => setCode(v || '')} onMount={handleEditorDidMount} theme={editorTheme} />
+                    </div>
+                    <div className="px-4 py-2 border-t border-zinc-200/60 dark:border-white/[0.06] bg-zinc-50/50 dark:bg-white/[0.01] flex-shrink-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-[11px] text-zinc-400 dark:text-white/25">
+                          <span>{isEditorReady ? 'Ready' : 'Loading'}</span>
+                          <span>·</span>
+                          <span><kbd className="px-1 py-0.5 bg-white dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] rounded text-[10px] font-mono">Ctrl+Enter</kbd> sends code</span>
+                        </div>
+                        <span className="hidden md:inline text-[11px] text-zinc-400 dark:text-white/25">Auto-save enabled</span>
+                      </div>
+                    </div>
+                  </Panel>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+
             </div>
           </div>
         </div>
@@ -1121,6 +1300,7 @@ export default function PremiumAITutorPage() {
             <div className="border-t border-zinc-200/60 dark:border-white/[0.06] p-4 space-y-3 flex-shrink-0">
               <div className="text-[10px] font-semibold text-zinc-400 dark:text-white/30 uppercase tracking-[0.12em]">Editor</div>
               <select value={language} onChange={e => handleLanguageChange(e.target.value)}
+                aria-label="Select programming language"
                 className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-white/[0.04] border border-zinc-200/60 dark:border-white/[0.08] rounded-xl text-zinc-800 dark:text-[#EDEDEF] focus:outline-none">
                 {languageOptions.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
               </select>
@@ -1133,6 +1313,16 @@ export default function PremiumAITutorPage() {
                   active:scale-[0.98] transition-all duration-150`}>
                 <span className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                 Send Code to Chat
+              </button>
+              <button onClick={() => navigator.clipboard.writeText(code)}
+                className={`w-full px-4 py-2.5 rounded-xl text-sm font-medium
+                  bg-zinc-50 dark:bg-white/[0.04]
+                  text-zinc-700 dark:text-[#8A8F98]
+                  border border-zinc-200/60 dark:border-white/[0.06]
+                  hover:bg-zinc-100 dark:hover:bg-white/[0.08]
+                  hover:text-zinc-900 dark:hover:text-[#EDEDEF]
+                  transition-all duration-150`}>
+                Copy Code
               </button>
             </div>
           </div>
