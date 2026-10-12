@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef, Fragment } from 'react'
 import { useChallengeFilterStoreP } from '../../../utils/stores/useChallegeStoreP'
 import { useQuestionStore } from '@/utils/stores/useQuestionStore'
 import { useQuestionsData } from '@/hooks/useQuestionsData'
@@ -8,7 +8,7 @@ import PremiumQuestionCard from '@/app/_components/challenges/PremiumQuestionCar
 import PremiumChallengeFilters from '@/app/_components/challenges/ChallegeFilterP'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, Crown, Flame, Target, Zap } from 'lucide-react'
-import DotGrid from '@/app/_components/DotGrid'
+
 import {
   Pagination,
   PaginationContent,
@@ -119,25 +119,13 @@ export default function PremiumChallengesPage() {
   }), [filteredQuestions])
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-[#050506] transition-colors duration-500 overflow-x-hidden">
+    <main className="min-h-screen bg-zinc-50 dark:bg-[#050506] transition-colors duration-500 overflow-x-hidden">
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="relative py-24 sm:py-32 overflow-hidden border-b border-zinc-200/60 dark:border-white/[0.06]">
 
-        {/* DotGrid */}
-        <div className="absolute inset-0 z-0">
-          <DotGrid
-            dotSize={8}
-            gap={20}
-            baseColor="#cbd5e1"
-            activeColor="#f59e0b"
-            proximity={100}
-            shockRadius={200}
-            shockStrength={4}
-            resistance={800}
-            returnDuration={1.8}
-          />
-        </div>
+        {/* Clean & Classy Pure CSS Background */}
+        <div className="absolute inset-0 z-0 bg-classy-grid" />
 
         {/* Layered atmosphere — dark mode */}
         <div className="absolute inset-0 z-[1] bg-gradient-to-b from-zinc-50/95 via-zinc-50/80 to-zinc-50/95 dark:from-[#050506]/95 dark:via-[#050506]/80 dark:to-[#050506]/95" />
@@ -261,12 +249,12 @@ export default function PremiumChallengesPage() {
                     </PaginationItem>
                     
                     {currentPage > 3 && (
-                      <>
+                      <Fragment key="start-ellipsis">
                         <PaginationItem>
                           <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setPage(1); }}>1</PaginationLink>
                         </PaginationItem>
                         <PaginationItem><PaginationEllipsis /></PaginationItem>
-                      </>
+                      </Fragment>
                     )}
 
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -284,12 +272,12 @@ export default function PremiumChallengesPage() {
                     ))}
 
                     {currentPage < totalPages - 2 && (
-                      <>
+                      <Fragment key="end-ellipsis">
                         <PaginationItem><PaginationEllipsis /></PaginationItem>
                         <PaginationItem>
                           <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setPage(totalPages); }}>{totalPages}</PaginationLink>
                         </PaginationItem>
-                      </>
+                      </Fragment>
                     )}
 
                     <PaginationItem>
@@ -345,7 +333,7 @@ export default function PremiumChallengesPage() {
         .animate-shimmer           { animation: shimmer 4s ease infinite; background-size: 200% auto; }
         .animate-card-reveal       { animation: card-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
       `}</style>
-    </div>
+    </main>
   )
 }
 

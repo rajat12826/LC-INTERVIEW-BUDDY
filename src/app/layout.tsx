@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   ],
 
   alternates: {
-    canonical: 'https://lc-interview-buddy.vercel.app',
+    canonical: './',
   },
 
   robots: {

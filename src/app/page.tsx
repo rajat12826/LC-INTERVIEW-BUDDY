@@ -12,8 +12,6 @@ import { motion, useMotionValue, useSpring, useTransform } from 'motion/react'
 import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
 
-// Lazy-load heavy canvas animation — keeps initial JS parse lean
-const DotGrid = dynamic(() => import('./_components/DotGrid'), { ssr: false })
 
 // ─── SpotlightCards Types & Constants ──────────────────────────────────────────
 
@@ -323,28 +321,16 @@ export default function Home() {
   }, [isLoaded, isProcessingClick, userData, isSignedIn, user, router])
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-500">
+    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-500">
       <Navbar />
 
       {/* ── Hero Section ──────────────────────────────────────────────────────── */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <DotGrid
-            dotSize={10}
-            gap={15}
-            baseColor={theme === 'dark' ? '#0f172a' : '#cbd5e1'}
-            activeColor="#0ea5e9"
-            proximity={120}
-            shockRadius={250}
-            shockStrength={5}
-            resistance={750}
-            returnDuration={1.5}
-          />
-        </div>
-
-        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-zinc-50/80 via-zinc-50/50 to-zinc-50/80 dark:from-zinc-950/80 dark:via-zinc-950/50 dark:to-zinc-950/80" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/20 dark:bg-sky-400/10 rounded-full blur-[128px]" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 dark:bg-indigo-400/10 rounded-full blur-[128px]" />
+        {/* Clean & Classy Pure CSS Background */}
+        <div className="absolute inset-0 z-0 bg-classy-grid" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-transparent via-zinc-50/40 to-zinc-50 dark:via-zinc-950/40 dark:to-zinc-950 pointer-events-none" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/15 dark:bg-sky-400/10 rounded-full blur-[128px] pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/15 dark:bg-indigo-400/10 rounded-full blur-[128px] pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center space-y-8">
@@ -612,7 +598,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-    </div>
+    </main>
   )
 }
 

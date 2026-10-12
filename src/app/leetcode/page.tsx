@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef, Fragment } from 'react'
 import { useChallengeFilterStore } from '@/utils/stores/useChallengeFilterStore'
 import ChallengeFilters from '../_components/challenges/ChallengeFilter'
 import QuestionCard from '../_components/challenges/QuestionCard'
@@ -9,7 +9,7 @@ import { useQuestionsData } from '@/hooks/useQuestionsData'
 import { Question } from '@/utils/types'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, Sparkles } from 'lucide-react'
-import DotGrid from '../_components/DotGrid'
+
 import {
   Pagination,
   PaginationContent,
@@ -107,30 +107,18 @@ export default function ChallengesPage() {
   }), [filteredQuestions])
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-500">
+    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-500">
 
       {/* ── Hero ── */}
       <section className="relative py-20 overflow-hidden border-b border-zinc-200/60 dark:border-zinc-800/60">
 
-        {/* DotGrid Background */}
-        <div className="absolute inset-0 z-0">
-          <DotGrid
-            dotSize={8}
-            gap={20}
-            baseColor="#cbd5e1"
-            activeColor="#0ea5e9"
-            proximity={100}
-            shockRadius={200}
-            shockStrength={4}
-            resistance={800}
-            returnDuration={1.8}
-          />
-        </div>
+        {/* Clean & Classy Pure CSS Background */}
+        <div className="absolute inset-0 z-0 bg-classy-grid" />
 
         {/* Atmospheric gradients */}
-        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-zinc-50/90 via-zinc-50/70 to-zinc-50/90 dark:from-zinc-950/90 dark:via-zinc-950/70 dark:to-zinc-950/90" />
-        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-400/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 right-1/3 w-96 h-96 bg-sky-500/10 dark:bg-sky-400/5 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-transparent via-zinc-50/50 to-zinc-50 dark:via-zinc-950/50 dark:to-zinc-950 pointer-events-none" />
+        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-400/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/3 w-96 h-96 bg-sky-500/10 dark:bg-sky-400/5 rounded-full blur-[120px] pointer-events-none" />
 
         {/* Content */}
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,12 +196,12 @@ export default function ChallengesPage() {
                     </PaginationItem>
                     
                     {currentPage > 3 && (
-                      <>
+                      <Fragment key="start-ellipsis">
                         <PaginationItem>
                           <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setPage(1); }}>1</PaginationLink>
                         </PaginationItem>
                         <PaginationItem><PaginationEllipsis /></PaginationItem>
-                      </>
+                      </Fragment>
                     )}
 
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -231,12 +219,12 @@ export default function ChallengesPage() {
                     ))}
 
                     {currentPage < totalPages - 2 && (
-                      <>
+                      <Fragment key="end-ellipsis">
                         <PaginationItem><PaginationEllipsis /></PaginationItem>
                         <PaginationItem>
                           <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setPage(totalPages); }}>{totalPages}</PaginationLink>
                         </PaginationItem>
-                      </>
+                      </Fragment>
                     )}
 
                     <PaginationItem>
@@ -288,7 +276,7 @@ export default function ChallengesPage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }
 
